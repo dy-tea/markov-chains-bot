@@ -1,0 +1,28 @@
+[package]
+name = "markov-chains-bot"
+version = "0.1.0"
+description = "Markov chains bot"
+authors = ["Dylan Donnell <dylan.donnell@student.griffith.ie>"]
+repository = "https://github.com/dy-tea/markov-chains-bot"
+license = "MIT"
+edition = "2021"
+
+[profile.dev]
+opt-level = 3
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true
+
+[dependencies.poise]
+version = "0.6.1"
+
+[dependencies]
+tokio = { version = "^1.4", features = ["macros", "signal", "rt-multi-thread"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+postcard = { version = "1.0", features = ["alloc"] }
+anyhow = "1.0"
+rand = "0.8"
+rayon = "1.10"
