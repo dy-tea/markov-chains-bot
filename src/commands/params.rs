@@ -45,7 +45,31 @@ pub async fn set(
     temp.remove("params").unwrap();
     temp.insert("params", GlobalData::Params(data));
 
-    ctx.say("**Params have been updated**").await?;
+    let current_params = format!(
+        "**Params have been updated**
+
+**Params:**
+- temperature = {}
+- temperature_alpha = {}
+- repeat_penalty = {}
+- repeat_penalty_window = {}
+- k_normal = {}
+- min_len = {}
+- max_len = {}
+- no_bigrams = {}
+- no_trigrams = {}",
+        data.temperature,
+        data.temperature_alpha,
+        data.repeat_penalty,
+        data.repeat_penalty_window,
+        data.k_normal,
+        data.min_len,
+        data.max_len,
+        data.no_bigrams,
+        data.no_trigrams
+    );
+
+    ctx.say(current_params).await?;
 
     Ok(())
 }
