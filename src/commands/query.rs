@@ -6,5 +6,6 @@ pub async fn query(
     ctx: Context<'_>,
     #[description = "Starting query to run the current model off"] query: String,
 ) -> Result<(), Error> {
+    ctx.say("TODO: ".to_owned() + query.as_str()).await?;
     Ok(())
 }

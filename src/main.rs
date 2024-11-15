@@ -1,12 +1,14 @@
 use poise::serenity_prelude as serenity;
 
+use std::sync::{Arc, Mutex};
+
+use markov_chains::prelude::*;
+
 pub mod global;
 pub use global::*;
 
 pub mod commands;
 pub use commands::*;
-
-const MODEL_DIR: &str = "models";
 
 /// Displays your or another user's account creation date
 #[poise::command(slash_command, prefix_command)]
@@ -25,6 +27,13 @@ async fn main() {
     let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
     let intents = serenity::GatewayIntents::non_privileged();
 
+    // Load default model
+    let default_model = postcard::from_bytes::<Model>(
+        &std::fs::read(format!("{}/kleden4.model", MODEL_DIR))
+            .expect("Failed to read model file"),
+    )
+    .expect("Failed to deserialize model");
+
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![age(), messages(), tokens(), dataset(), model(), query()],
@@ -35,6 +44,7 @@ async fn main() {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
                     params: Default::default(),
+                    model: Arc::new(Mutex::new(default_model)),
                 })
             })
         })

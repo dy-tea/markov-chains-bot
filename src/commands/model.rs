@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use std::io::Write;
+use std::sync::{Arc, Mutex};
 
 pub use crate::global::*;
 
@@ -117,6 +117,26 @@ pub async fn load(
     //    This will be in global data instead
     //    #[description = "Generation params"] params: GenerationParams,
 ) -> Result<(), Error> {
+    if let Some(name) = name {
+        // Load model from file (scope is to force a drop)
+        {
+            let model = postcard::from_bytes::<Model>(
+                &std::fs::read(
+                    format!("{}/{}.model", MODEL_DIR, name)
+                )?
+            )?;
+
+            let mut data = ctx.data().model.lock().unwrap();
+            *data = model;
+        }
+
+        ctx.say(format!("Model **{}** loaded successfully", name)).await?;
+    } else if let Some(model) = model {
+        ctx.say("TODO: Load from url").await?;
+    } else {
+        ctx.say("You need to provide either a model name or a model file").await?;
+    }
+
     /*
     println!("Reading model...");
 
