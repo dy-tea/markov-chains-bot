@@ -11,7 +11,7 @@ pub use messages::messages;
 pub use tokens::tokens;
 pub use dataset::dataset;
 pub use model::model;
-pub use params::{set_params, reset_params};
+pub use params::params;
 pub use query::query;
 
 pub fn search_files(paths: impl IntoIterator<Item = impl Into<PathBuf>>) -> Vec<PathBuf> {

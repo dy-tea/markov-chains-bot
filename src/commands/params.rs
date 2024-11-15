@@ -2,9 +2,14 @@ use markov_chains::prelude::GenerationParams;
 
 pub use crate::global::*;
 
+#[poise::command(prefix_command, slash_command, subcommands("set", "reset"))]
+pub async fn params(ctx: Context<'_>) -> Result<(), Error> {
+    Ok(())
+}
+
 /// Update the model parameters
 #[poise::command(prefix_command, slash_command)]
-pub async fn set_params(
+pub async fn set(
     ctx: Context<'_>,
     #[description = "Probability to keep the most probable token"] temperature: Option<f64>,
     #[description = "Probability multiplier to skip the most probable token"] temperature_alpha: Option<f64>,
@@ -45,7 +50,7 @@ pub async fn set_params(
 
 /// Reset model parameters to default values
 #[poise::command(prefix_command, slash_command)]
-pub async fn reset_params(ctx: Context<'_>) -> Result<(), Error>  {
+pub async fn reset(ctx: Context<'_>) -> Result<(), Error>  {
     // Get temporary data
     let mut temp = ctx.data().temp.lock().await;
 

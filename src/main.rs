@@ -45,7 +45,7 @@ async fn main() {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![age(), messages(), tokens(), dataset(), model(), query(), set_params(), reset_params()],
+            commands: vec![age(), messages(), tokens(), dataset(), model(), params(), query()],
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {
