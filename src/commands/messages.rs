@@ -2,10 +2,10 @@ use std::path::PathBuf;
 
 pub use crate::global::*;
 
-use crate::prelude::{
-    Messages,
-    Tokens,
-    TokenizedMessages
+use markov_chains::{
+    messages::Messages,
+    tokens::Tokens,
+    tokenized_messages::TokenizedMessages
 };
 
 use super::search_files;
@@ -24,6 +24,7 @@ pub async fn parse(
     #[description = "Paths to the messages list"] path: Vec<PathBuf>,
     #[description = "Path to the bundle output"] output: PathBuf
 ) -> Result<(), Error> {
+    /*
     let mut messages = Messages::default();
 
     println!("Parsing messages...");
@@ -39,6 +40,7 @@ pub async fn parse(
     std::fs::write(output, postcard::to_allocvec(&messages)?)?;
 
     println!("Done");
+    */
 
     Ok(())
 }
@@ -50,6 +52,7 @@ pub async fn merge(
     #[description = "Paths to the messages bundles"] path: Vec<PathBuf>,
     #[description = "Path to the merged messages bundle"] output: PathBuf
 ) -> Result<(), Error> {
+    /*
     let mut messages = Messages::default();
 
     println!("Reading messages bundles...");
@@ -67,6 +70,7 @@ pub async fn merge(
     std::fs::write(output, postcard::to_allocvec(&messages)?)?;
 
     println!("Done");
+    */
 
     Ok(())
 }
@@ -79,6 +83,7 @@ pub async fn tokenize(
     #[description = "Path to the tokens bundle"] tokens: PathBuf,
     #[description = "Path to the tokenized messages bundle"] output: PathBuf,
 ) -> Result<(), Error> {
+    /*
     println!("Reading messages bundle...");
 
     let messages = postcard::from_bytes::<Messages>(&std::fs::read(messages)?)?;
@@ -96,5 +101,6 @@ pub async fn tokenize(
     std::fs::write(output, postcard::to_allocvec(&tokenized)?)?;
 
     println!("Done");
+    */
     Ok(())
 }

@@ -2,13 +2,12 @@ use std::path::PathBuf;
 
 pub use crate::global::*;
 
-use crate::prelude::{
-    TokenizedMessages,
-    Tokens,
-    Dataset
+use crate::search_files;
+use markov_chains::{
+    dataset::Dataset,
+    tokens::Tokens,
+    tokenized_messages::TokenizedMessages
 };
-
-use super::search_files;
 
 #[poise::command(prefix_command, slash_command, subcommands("create", "addmessages", "addtokens", "checkword"))]
 pub async fn dataset(
@@ -26,6 +25,7 @@ pub async fn create(
     #[description = "Messages weight in the dataset"] weight: u64,
     #[description = "Path to the dataset output"] output: PathBuf,
 ) -> Result<(), Error> {
+    /*
     println!("Reading tokenized messages bundle...");
 
     let tokenized_messages = postcard::from_bytes::<TokenizedMessages>(&std::fs::read(path)?)?;
@@ -45,6 +45,7 @@ pub async fn create(
     std::fs::write(output, postcard::to_allocvec(&dataset)?)?;
 
     println!("Done");
+     */
 
     Ok(())
 }
@@ -58,6 +59,7 @@ pub async fn addmessages(
     #[description = "Messages weight in the dataset"] weight: u64,
     #[description = "Path to the dataset output"] output: PathBuf,
 ) -> Result<(), Error> {
+    /*
     println!("Reading dataset bundle...");
 
     let mut dataset = postcard::from_bytes::<Dataset>(&std::fs::read(path)?)?;
@@ -77,7 +79,7 @@ pub async fn addmessages(
     std::fs::write(output, postcard::to_allocvec(&dataset)?)?;
 
     println!("Done");
-
+ */
     Ok(())
 }
 
@@ -89,6 +91,7 @@ pub async fn addtokens(
     #[description = "Path to the tokens bundle"] tokens: Vec<PathBuf>,
     #[description = "Path to the dataset output"] output: PathBuf,
 ) -> Result<(), Error> {
+    /*
     println!("Reading dataset bundle...");
 
     let mut dataset = postcard::from_bytes::<Dataset>(&std::fs::read(path)?)?;
@@ -108,6 +111,7 @@ pub async fn addtokens(
     std::fs::write(output, postcard::to_allocvec(&dataset)?)?;
 
     println!("Done");
+    */
 
     Ok(())
 }
@@ -119,6 +123,7 @@ pub async fn checkword(
     #[description = "Path to the dataset bundle"] path: PathBuf,
     #[description = "Word to check"] word: String,
 ) -> Result<(), Error> {
+    /*
     println!("Reading dataset bundle...");
 
     let dataset = postcard::from_bytes::<Dataset>(&std::fs::read(path)?)?;
@@ -154,6 +159,7 @@ pub async fn checkword(
     println!("   Total num: {total_num}");
     println!("  Importance: {importance}");
     println!("   Frequency: {:.5}%", distinct_num as f64 / total_messages as f64 * 100.0);
+    */
 
     Ok(())
 }

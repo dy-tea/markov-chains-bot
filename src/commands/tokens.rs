@@ -2,7 +2,7 @@ use std::path::PathBuf;
 
 pub use crate::global::*;
 
-use crate::prelude::{
+use markov_chains::prelude::{
     Messages,
     Tokens
 };
@@ -23,6 +23,7 @@ pub async fn parse(
     #[description = "Path to the messages bundle"] path: Vec<PathBuf>,
     #[description = "Path to the tokens output"] output: PathBuf,
 ) -> Result<(), Error> {
+    /*
     println!("Reading messages bundles...");
 
     let mut messages = Messages::default();
@@ -42,6 +43,7 @@ pub async fn parse(
     std::fs::write(output, postcard::to_allocvec(&tokens)?)?;
 
     println!("Done");
+    */
 
     Ok(())
 }
@@ -53,6 +55,7 @@ pub async fn merge(
     #[description = "Path to the tokens bundle"] path: Vec<PathBuf>,
     #[description = "Path to the merged tokens output"] output: PathBuf,
 ) -> Result<(), Error> {
+    /*
     println!("Reading tokens bundles...");
 
     let mut tokens = Tokens::default();
@@ -68,6 +71,7 @@ pub async fn merge(
     std::fs::write(output, postcard::to_allocvec(&tokens)?)?;
 
     println!("Done");
+    */
 
     Ok(())
 }

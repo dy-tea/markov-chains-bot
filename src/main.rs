@@ -3,40 +3,8 @@ use poise::serenity_prelude as serenity;
 pub mod global;
 pub use global::*;
 
-pub mod messages;
-pub mod tokens;
-pub mod tokenized_messages;
-pub mod ngram;
-pub mod dataset;
-pub mod model;
-
 pub mod commands;
 pub use commands::*;
-
-pub mod prelude {
-    pub use super::messages::Messages;
-
-    pub use super::tokens::{
-        Tokens,
-        START_TOKEN,
-        END_TOKEN
-    };
-
-    pub use super::tokenized_messages::TokenizedMessages;
-
-    pub use super::ngram::{
-        Ngram,
-        Unigram,
-        Bigram,
-        Trigram
-    };
-
-    pub use super::dataset::Dataset;
-    pub use super::model::params::GenerationParams;
-    pub use super::model::transitions::Transitions;
-    pub use super::model::generator::Generator;
-    pub use super::model::model::Model;
-}
 
 /// Displays your or another user's account creation date
 #[poise::command(slash_command, prefix_command)]
@@ -63,7 +31,9 @@ async fn main() {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {})
+                Ok(Data {
+                    params: Default::default(),
+                })
             })
         })
         .build();

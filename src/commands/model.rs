@@ -3,7 +3,7 @@ use std::io::Write;
 
 pub use crate::global::*;
 
-use crate::prelude::{
+use markov_chains::prelude::{
     Messages,
     Tokens,
     TokenizedMessages,
@@ -28,6 +28,7 @@ pub async fn build(ctx: Context<'_>,
     #[description = "Header to add to the model"] header: Vec<String>,
     #[description = "Path to the model output"] output: PathBuf,
 ) -> Result<(), Error> {
+    /*
     println!("Reading dataset bundle...");
 
     let messages = postcard::from_bytes::<Dataset>(&std::fs::read(dataset)?)?;
@@ -47,7 +48,7 @@ pub async fn build(ctx: Context<'_>,
     std::fs::write(output, postcard::to_allocvec(&model)?)?;
 
     println!("Done");
-
+    */
     Ok(())
 }
 
@@ -61,6 +62,7 @@ pub async fn fromscratch(
     #[description = "Header to add to the model"] header: Vec<String>,
     #[description = "Path to the model output"] output: PathBuf,
 ) -> Result<(), Error> {
+    /*
     println!("Parsing messages...");
 
     let mut messages = Messages::default();
@@ -102,7 +104,7 @@ pub async fn fromscratch(
     std::fs::write(output, postcard::to_allocvec(&model)?)?;
 
     println!("Done");
-
+    */
     Ok(())
 }
 
@@ -111,7 +113,10 @@ pub async fn fromscratch(
 pub async fn load(
     ctx: Context<'_>,
     #[description = "Path to the model"] model: PathBuf,
+    //    This will be in global data instead
+    //    #[description = "Generation params"] params: GenerationParams,
 ) -> Result<(), Error> {
+    /*
     println!("Reading model...");
 
     let model = postcard::from_bytes::<Model>(&std::fs::read(model)?)?;
@@ -221,7 +226,6 @@ pub async fn load(
             stdout.flush()?;
         }
 
-        /*
         for token in model.generate(request, params) {
             match token {
                 Ok(token) => {
@@ -242,9 +246,12 @@ pub async fn load(
                     break;
                 }
             }
-        } */
+        }
 
         stdout.write_all(b"\n\n")?;
         stdout.flush()?;
     }
+    */
+
+    Ok(())
 }
