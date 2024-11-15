@@ -121,17 +121,16 @@ pub async fn load(
             }
         };
 
+        // Get temp data
+        let mut temp = ctx.data().temp.lock().await;
+
         // Update current model
-        {
-            let mut current_model = ctx.data().model.lock().unwrap();
-            *current_model = model_data;
-        }
+        temp.remove("Model");
+        temp.insert("model", GlobalData::Model(model_data.clone()));
 
         // Update current model name
-        {
-            let mut current_model_name = ctx.data().model_name.lock().unwrap();
-            *current_model_name = name.clone();
-        }
+        temp.remove("model_name");
+        temp.insert("model_name", GlobalData::ModelName(name.clone()));
 
         ctx.say(format!("Model **{}** loaded successfully", name)).await?;
         return Ok(());

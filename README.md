@@ -3,7 +3,9 @@
 See [here](https://github.com/krypt0nn/markov-chains) for actual implementation.
 
 ## TODO
-- [x] Params setparams()
+- [x] Params
+  - [x] setparams()
+  - [x] resetparams()
 - [x] Model querying
 - [ ] Model load()
   - [ ] From models directory
