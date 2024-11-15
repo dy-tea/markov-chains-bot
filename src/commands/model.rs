@@ -114,8 +114,6 @@ pub async fn load(
     ctx: Context<'_>,
     #[description = "Name of model to load (e.g. `kleden4`)"] name: Option<String>,
     #[description = "Link to the model"] model: Option<PathBuf>,
-    //    This will be in global data instead
-    //    #[description = "Generation params"] params: GenerationParams,
 ) -> Result<(), Error> {
     if let Some(name) = name {
         // Load model from file (scope is to force a drop)

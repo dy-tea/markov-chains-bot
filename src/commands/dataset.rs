@@ -25,6 +25,7 @@ pub async fn create(
     #[description = "Messages weight in the dataset"] weight: u64,
     #[description = "Path to the dataset output"] output: PathBuf,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Reading tokenized messages bundle...");
 
@@ -59,6 +60,7 @@ pub async fn addmessages(
     #[description = "Messages weight in the dataset"] weight: u64,
     #[description = "Path to the dataset output"] output: PathBuf,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Reading dataset bundle...");
 
@@ -91,6 +93,7 @@ pub async fn addtokens(
     #[description = "Path to the tokens bundle"] tokens: Vec<PathBuf>,
     #[description = "Path to the dataset output"] output: PathBuf,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Reading dataset bundle...");
 
@@ -123,6 +126,7 @@ pub async fn checkword(
     #[description = "Path to the dataset bundle"] path: PathBuf,
     #[description = "Word to check"] word: String,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Reading dataset bundle...");
 

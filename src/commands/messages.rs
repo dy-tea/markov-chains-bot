@@ -24,6 +24,7 @@ pub async fn parse(
     #[description = "Paths to the messages list"] path: Vec<PathBuf>,
     #[description = "Path to the bundle output"] output: PathBuf
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     let mut messages = Messages::default();
 
@@ -52,6 +53,7 @@ pub async fn merge(
     #[description = "Paths to the messages bundles"] path: Vec<PathBuf>,
     #[description = "Path to the merged messages bundle"] output: PathBuf
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     let mut messages = Messages::default();
 
@@ -83,6 +85,7 @@ pub async fn tokenize(
     #[description = "Path to the tokens bundle"] tokens: PathBuf,
     #[description = "Path to the tokenized messages bundle"] output: PathBuf,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Reading messages bundle...");
 

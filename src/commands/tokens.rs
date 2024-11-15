@@ -23,6 +23,7 @@ pub async fn parse(
     #[description = "Path to the messages bundle"] path: Vec<PathBuf>,
     #[description = "Path to the tokens output"] output: PathBuf,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Reading messages bundles...");
 
@@ -55,6 +56,7 @@ pub async fn merge(
     #[description = "Path to the tokens bundle"] path: Vec<PathBuf>,
     #[description = "Path to the merged tokens output"] output: PathBuf,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Reading tokens bundles...");
 
