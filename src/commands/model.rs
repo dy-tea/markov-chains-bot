@@ -125,7 +125,7 @@ pub async fn load(
         let mut temp = ctx.data().temp.lock().await;
 
         // Update current model
-        temp.remove("Model");
+        temp.remove("model");
         temp.insert("model", GlobalData::Model(model_data.clone()));
 
         // Update current model name

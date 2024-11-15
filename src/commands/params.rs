@@ -45,6 +45,8 @@ pub async fn set(
     temp.remove("params").unwrap();
     temp.insert("params", GlobalData::Params(data));
 
+    ctx.say("**Params have been updated**").await?;
+
     Ok(())
 }
 
@@ -56,6 +58,8 @@ pub async fn reset(ctx: Context<'_>) -> Result<(), Error>  {
 
     temp.remove("params").unwrap();
     temp.insert("params", GlobalData::Params(GenerationParams::default()));
+
+    ctx.say("**Params have been reset**").await?;
 
     Ok(())
 }
