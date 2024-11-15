@@ -18,6 +18,7 @@ pub async fn build(ctx: Context<'_>,
     #[description = "Header to add to the model"] header: Vec<String>,
     #[description = "Path to the model output"] output: PathBuf,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Reading dataset bundle...");
 
@@ -52,6 +53,7 @@ pub async fn fromscratch(
     #[description = "Header to add to the model"] header: Vec<String>,
     #[description = "Path to the model output"] output: PathBuf,
 ) -> Result<(), Error> {
+    ctx.say("**UNIMPLEMENTED**").await?;
     /*
     println!("Parsing messages...");
 
