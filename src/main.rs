@@ -29,7 +29,7 @@ async fn main() {
 
     // Load default model
     let default_model = postcard::from_bytes::<Model>(
-        &std::fs::read(format!("{}/kleden4.model", MODEL_DIR))
+        &std::fs::read(format!("{}/{}.model", MODEL_DIR, DEFAULT_MODEL_NAME))
             .expect("Failed to read model file"),
     )
     .expect("Failed to deserialize model");
@@ -45,6 +45,7 @@ async fn main() {
                 Ok(Data {
                     params: Default::default(),
                     model: Arc::new(Mutex::new(default_model)),
+                    model_name: Arc::new(Mutex::new(DEFAULT_MODEL_NAME.to_string())),
                 })
             })
         })

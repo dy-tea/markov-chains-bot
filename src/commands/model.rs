@@ -116,16 +116,23 @@ pub async fn load(
     #[description = "Link to the model"] model: Option<PathBuf>,
 ) -> Result<(), Error> {
     if let Some(name) = name {
-        // Load model from file (scope is to force a drop)
-        {
-            let model = postcard::from_bytes::<Model>(
-                &std::fs::read(
-                    format!("{}/{}.model", MODEL_DIR, name)
-                )?
-            )?;
+        // Load model from file
+        let model = postcard::from_bytes::<Model>(
+            &std::fs::read(
+                format!("{}/{}.model", MODEL_DIR, name)
+            )?
+        )?;
 
+        // Update current model
+        {
             let mut data = ctx.data().model.lock().unwrap();
             *data = model;
+        }
+
+        // Update current model name
+        {
+            let mut data = ctx.data().model_name.lock().unwrap();
+            *data = name.clone();
         }
 
         ctx.say(format!("Model **{}** loaded successfully", name)).await?;
