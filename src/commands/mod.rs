@@ -5,12 +5,14 @@ mod tokens;
 mod dataset;
 mod model;
 mod params;
+mod query;
 
 pub use messages::messages;
 pub use tokens::tokens;
 pub use dataset::dataset;
 pub use model::model;
 pub use params::set_params;
+pub use query::query;
 
 pub fn search_files(paths: impl IntoIterator<Item = impl Into<PathBuf>>) -> Vec<PathBuf> {
     let mut files = Vec::new();

@@ -1,5 +1,6 @@
 pub use crate::global::*;
 
+/// Update the model parameters
 #[poise::command(prefix_command, slash_command)]
 pub async fn set_params(
     ctx: Context<'_>,

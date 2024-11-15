@@ -6,6 +6,8 @@ pub use global::*;
 pub mod commands;
 pub use commands::*;
 
+const MODEL_DIR: &str = "models";
+
 /// Displays your or another user's account creation date
 #[poise::command(slash_command, prefix_command)]
 async fn age(
@@ -25,7 +27,7 @@ async fn main() {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![age(), messages(), tokens(), dataset(), model()],
+            commands: vec![age(), messages(), tokens(), dataset(), model(), query()],
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {

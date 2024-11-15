@@ -112,7 +112,8 @@ pub async fn fromscratch(
 #[poise::command(prefix_command, slash_command)]
 pub async fn load(
     ctx: Context<'_>,
-    #[description = "Path to the model"] model: PathBuf,
+    #[description = "Name of model to load (e.g. `kleden4`)"] name: Option<String>,
+    #[description = "Link to the model"] model: Option<PathBuf>,
     //    This will be in global data instead
     //    #[description = "Generation params"] params: GenerationParams,
 ) -> Result<(), Error> {
