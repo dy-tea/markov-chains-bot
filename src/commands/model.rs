@@ -106,6 +106,9 @@ pub async fn load(
     #[description = "Link to the model"] url: Option<PathBuf>,
 ) -> Result<(), Error> {
     if let Some(name) = name {
+        // Send a message with the loading status
+        let status = ctx.say(format!("Attempting to load model **{}.model**", name)).await?;
+
         // Load model from file
         let model_data = match std::fs::read(format!("{}/{}.model", MODEL_DIR, name)) {
             Ok(model) => match postcard::from_bytes::<Model>(&model) {
@@ -132,7 +135,12 @@ pub async fn load(
         temp.remove("model_name");
         temp.insert("model_name", GlobalData::ModelName(name.clone()));
 
-        ctx.say(format!("Model **{}** loaded successfully", name)).await?;
+        // Edit the message with loaded status
+        status.edit(ctx, poise::CreateReply {
+            content: Some(format!("Model **{}** loaded successfully", name)),
+            ..Default::default()
+        }).await?;
+
         return Ok(());
     }
 

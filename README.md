@@ -8,8 +8,8 @@ See [here](https://github.com/krypt0nn/markov-chains) for actual implementation.
   - [x] resetparams()
 - [x] Model querying
 - [ ] Model load()
-  - [ ] From models directory
-  - [ ] From url
+  - [x] By name
+  - [ ] By url
 - [ ] Model building
   - [ ] build()
   - [ ] fromscratch()
