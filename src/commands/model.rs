@@ -1,18 +1,8 @@
 use std::path::PathBuf;
-use std::sync::{Arc, Mutex};
 
 pub use crate::global::*;
 
-use markov_chains::prelude::{
-    Messages,
-    Tokens,
-    TokenizedMessages,
-    Dataset,
-    GenerationParams,
-    Model
-};
-
-use super::search_files;
+use markov_chains::prelude::*;
 
 #[poise::command(prefix_command, slash_command, subcommands("build", "fromscratch", "load"))]
 pub async fn model(ctx: Context<'_>) -> Result<(), Error> {
@@ -112,172 +102,46 @@ pub async fn fromscratch(
 #[poise::command(prefix_command, slash_command)]
 pub async fn load(
     ctx: Context<'_>,
-    #[description = "Name of model to load (e.g. `kleden4`)"] name: Option<String>,
-    #[description = "Link to the model"] model: Option<PathBuf>,
+    #[description = "Name of model to load (e.g. kleden4)"] name: Option<String>,
+    #[description = "Link to the model"] url: Option<PathBuf>,
 ) -> Result<(), Error> {
     if let Some(name) = name {
         // Load model from file
-        let model = postcard::from_bytes::<Model>(
-            &std::fs::read(
-                format!("{}/{}.model", MODEL_DIR, name)
-            )?
-        )?;
+        let model_data = match std::fs::read(format!("{}/{}.model", MODEL_DIR, name)) {
+            Ok(model) => match postcard::from_bytes::<Model>(&model) {
+                Ok(model) => model,
+                Err(err) => {
+                    ctx.say(format!("**ERROR: Failed to load model \"{}.model\"** `{}`", name, err)).await?;
+                    return Ok(());
+                }
+            }
+            Err(err) => {
+                ctx.say(format!("**ERROR: Failed to load model \"{}.model\"** `{}`", name, err)).await?;
+                return Ok(());
+            }
+        };
 
         // Update current model
         {
-            let mut data = ctx.data().model.lock().unwrap();
-            *data = model;
+            let mut current_model = ctx.data().model.lock().unwrap();
+            *current_model = model_data;
         }
 
         // Update current model name
         {
-            let mut data = ctx.data().model_name.lock().unwrap();
-            *data = name.clone();
+            let mut current_model_name = ctx.data().model_name.lock().unwrap();
+            *current_model_name = name.clone();
         }
 
         ctx.say(format!("Model **{}** loaded successfully", name)).await?;
-    } else if let Some(model) = model {
+        return Ok(());
+    }
+
+    if let Some(url) = url {
         ctx.say("TODO: Load from url").await?;
-    } else {
-        ctx.say("You need to provide either a model name or a model file").await?;
+        return Ok(());
     }
 
-    /*
-    println!("Reading model...");
-
-    let model = postcard::from_bytes::<Model>(&std::fs::read(model)?)?;
-
-    println!("Starting model...");
-
-    let stdin = std::io::stdin();
-    let mut stdout = std::io::stdout();
-
-    let chains = (
-        model.transitions.trigrams_len()
-            .map(|len| len.to_string())
-            .unwrap_or(String::from("N/A")),
-
-        model.transitions.bigrams_len()
-            .map(|len| len.to_string())
-            .unwrap_or(String::from("N/A")),
-
-        model.transitions.unigrams_len()
-    );
-
-    let avg_paths = (
-        model.transitions.calc_avg_trigram_paths()
-            .map(|avg| format!("{:.4}", avg))
-            .unwrap_or(String::from("N/A")),
-
-        model.transitions.calc_avg_bigram_paths()
-            .map(|avg| format!("{:.4}", avg))
-            .unwrap_or(String::from("N/A")),
-
-        format!("{:.4}", model.transitions.calc_avg_unigram_paths())
-    );
-
-    let variety = (
-        model.transitions.calc_trigram_variety()
-            .map(|variety| format!("{:.4}%", variety * 100.0))
-            .unwrap_or(String::from("N/A")),
-
-        model.transitions.calc_bigram_variety()
-            .map(|variety| format!("{:.4}%", variety * 100.0))
-            .unwrap_or(String::from("N/A")),
-
-        format!("{:.4}%", model.transitions.calc_unigram_variety() * 100.0)
-    );
-
-    let model_name = model.headers()
-        .get("name")
-        .map(|name| name.as_str())
-        .unwrap_or("model");
-
-    println!();
-    println!("  Model loaded:");
-    println!();
-    println!("    Total tokens  :  {}", model.tokens.len());
-    println!("    Chains        :  {} / {} / {}", chains.0, chains.1, chains.2);
-    println!("    Avg paths     :  {} / {} / {}", avg_paths.0, avg_paths.1, avg_paths.2);
-    println!("    Variety       :  {} / {} / {}", variety.0, variety.1, variety.2);
-
-    if !model.headers().is_empty() {
-        println!();
-        println!("  Headers:");
-        println!();
-
-        let max_len = model.headers()
-            .keys()
-            .map(|key| key.len())
-            .max()
-            .unwrap_or(0);
-
-        for (key, value) in model.headers() {
-            let offset = " ".repeat(max_len - key.len());
-
-            println!("    [{key}]{offset} : {value}");
-        }
-    }
-
-    println!();
-
-    loop {
-        let mut request = String::new();
-
-        stdout.write_all(b"> ")?;
-        stdout.flush()?;
-
-        stdin.read_line(&mut request)?;
-
-        let request = request.split_whitespace()
-            .filter(|word| !word.is_empty())
-            .map(|word| word.to_lowercase())
-            .map(|word| model.tokens.find_token(word))
-            .collect::<Option<Vec<_>>>();
-
-        let Some(request) = request else {
-            continue;
-        };
-
-        if request.is_empty() {
-            continue;
-        }
-
-        stdout.write_all(format!("\n  {model_name}: ").as_bytes())?;
-        stdout.flush()?;
-
-        for token in &request {
-            stdout.write_all(model.tokens.find_word(*token).unwrap().as_bytes())?;
-            stdout.write_all(b" ")?;
-            stdout.flush()?;
-        }
-
-        for token in model.generate(request, params) {
-            match token {
-                Ok(token) => {
-                    let Some(word) = model.tokens.find_word(token) else {
-                        print!("\n\n  Failed to find word for token: {token}");
-
-                        break;
-                    };
-
-                    stdout.write_all(word.as_bytes())?;
-                    stdout.write_all(b" ")?;
-                    stdout.flush()?;
-                }
-
-                Err(err) => {
-                    print!("\n\n  Failed to generate: {err}");
-
-                    break;
-                }
-            }
-        }
-
-        stdout.write_all(b"\n\n")?;
-        stdout.flush()?;
-    }
-    */
-
+    ctx.say("Please provide either a model name or a url").await?;
     Ok(())
 }

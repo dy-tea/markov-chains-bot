@@ -1,5 +1,3 @@
-use poise::ReplyHandle;
-
 pub use crate::global::*;
 
 /// Send a query to the currently loaded model
