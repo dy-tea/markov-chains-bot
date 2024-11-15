@@ -116,12 +116,18 @@ pub async fn load(
             Ok(model) => match postcard::from_bytes::<Model>(&model) {
                 Ok(model) => model,
                 Err(err) => {
-                    ctx.say(format!("**ERROR: Failed to load model \"{}.model\"** `{}`", name, err)).await?;
+                    status.edit(ctx, poise::CreateReply {
+                        content: Some(format!("**ERROR: Failed to load model \"{}.model\"** `{}`", name, err)),
+                        ..Default::default()
+                    }).await?;
                     return Ok(());
                 }
             }
             Err(err) => {
-                ctx.say(format!("**ERROR: Failed to load model \"{}.model\"** `{}`", name, err)).await?;
+                status.edit(ctx, poise::CreateReply {
+                    content: Some(format!("**ERROR: Failed to load model \"{}.model\"** `{}`", name, err)),
+                    ..Default::default()
+                }).await?;
                 return Ok(());
             }
         };
