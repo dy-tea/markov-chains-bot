@@ -11,9 +11,9 @@ See [here](https://github.com/krypt0nn/markov-chains) for actual implementation.
   - [x] list()
   - [ ] build()
   - [ ] fromscratch()
-  - [ ] load()
+  - [x] load()
     - [x] name
-    - [ ] url
+    - [x] url
 ## Potentially TODO
 - [ ] Dataset
   - [ ] create()
