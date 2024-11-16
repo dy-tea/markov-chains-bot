@@ -2,7 +2,30 @@ use markov_chains::prelude::GenerationParams;
 
 pub use crate::global::*;
 
-#[poise::command(prefix_command, slash_command, subcommands("set", "reset"))]
+fn format_params(params: &GenerationParams) -> String {
+    format!("**Params:**
+- **temperature**\t`{}`
+- **temperature_alpha:**\t`{}`
+- **repeat_penalty:**\t`{}`
+- **repeat_penalty_window:**\t`{}`
+- **k_normal:**\t`{}`
+- **min_len:**\t`{}`
+- **max_len:**\t`{}`
+- **no_bigrams:**\t`{}`
+- **no_trigrams:**\t`{}`",
+        params.temperature,
+        params.temperature_alpha,
+        params.repeat_penalty,
+        params.repeat_penalty_window,
+        params.k_normal,
+        params.min_len,
+        params.max_len,
+        params.no_bigrams,
+        params.no_trigrams
+    )
+}
+
+#[poise::command(prefix_command, slash_command, subcommands("set", "reset", "show"))]
 pub async fn params(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -35,32 +58,17 @@ pub async fn set(
         no_trigrams: no_trigrams.unwrap_or(params.no_trigrams),
     };
 
-    let current_params = format!(
-        "**Params have been updated**
+    ctx.say(format!("## Params have been updated\n{}", format_params(&params.clone()))).await?;
 
-**Params:**
-- temperature = {}
-- temperature_alpha = {}
-- repeat_penalty = {}
-- repeat_penalty_window = {}
-- k_normal = {}
-- min_len = {}
-- max_len = {}
-- no_bigrams = {}
-- no_trigrams = {}",
-        params.temperature,
-        params.temperature_alpha,
-        params.repeat_penalty,
-        params.repeat_penalty_window,
-        params.k_normal,
-        params.min_len,
-        params.max_len,
-        params.no_bigrams,
-        params.no_trigrams
-    );
+    Ok(())
+}
 
-    ctx.say(current_params).await?;
+/// Show current model parameters
+#[poise::command(prefix_command, slash_command)]
+pub async fn show(ctx: Context<'_>) -> Result<(), Error>  {
+    let params = ctx.data().params.lock().await;
 
+    ctx.say(format_params(&params.clone())).await?;
     Ok(())
 }
 

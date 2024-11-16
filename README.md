@@ -4,8 +4,9 @@ See [here](https://github.com/krypt0nn/markov-chains) for actual implementation.
 
 ## TODO
 - [x] Params
-  - [x] setparams()
-  - [x] resetparams()
+  - [x] set()
+  - [x] reset()
+  - [x] show()
 - [ ] Model
   - [x] query()
   - [x] list()
