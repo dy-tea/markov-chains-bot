@@ -1,10 +1,13 @@
-use std::path::PathBuf;
+use std::{
+    path::PathBuf,
+    fs::read_dir
+};
 
 pub use crate::global::*;
 
 use markov_chains::prelude::*;
 
-#[poise::command(prefix_command, slash_command, subcommands("build", "fromscratch", "load"))]
+#[poise::command(prefix_command, slash_command, subcommands("build", "fromscratch", "load", "list"))]
 pub async fn model(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -162,5 +165,45 @@ pub async fn load(
     }
 
     ctx.say("Please provide either a model name or a url").await?;
+    Ok(())
+}
+
+
+/// List available models
+#[poise::command(prefix_command, slash_command)]
+pub async fn list(
+    ctx: Context<'_>,
+) -> Result<(), Error> {
+    let response = ctx.say(format!("Searching for models in directory `{}`", MODEL_DIR)).await?;
+
+    match read_dir(MODEL_DIR) {
+        Ok(entries) => {
+            let mut models = Vec::new();
+
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    if let Ok(name) = entry.file_name().into_string() {
+                        if name.ends_with(".model") {
+                            models.push(name.trim_end_matches(".model").to_string());
+                        }
+                    }
+                }
+            }
+
+            // Edit with list of models
+            response.edit(ctx, poise::CreateReply {
+                content: Some(format!("## Available models:\n- `{}`", models.join("`\n- `"))),
+                ..Default::default()
+            }).await?;
+        }
+        Err(err) => {
+            // Edit with error message
+            response.edit(ctx, poise::CreateReply {
+                content: Some(format!("**ERROR: Failed to list models**\n**ERROR:** `{}`", err)),
+                ..Default::default()
+            }).await?;
+        }
+    }
+
     Ok(())
 }

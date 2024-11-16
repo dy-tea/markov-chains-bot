@@ -7,6 +7,7 @@ See [here](https://github.com/krypt0nn/markov-chains) for actual implementation.
   - [x] setparams()
   - [x] resetparams()
 - [x] Model querying
+- [x] Model list()
 - [ ] Model load()
   - [x] By name
   - [ ] By url
