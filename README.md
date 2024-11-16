@@ -6,14 +6,14 @@ See [here](https://github.com/krypt0nn/markov-chains) for actual implementation.
 - [x] Params
   - [x] setparams()
   - [x] resetparams()
-- [x] Model querying
-- [x] Model list()
-- [ ] Model load()
-  - [x] By name
-  - [ ] By url
-- [ ] Model building
+- [ ] Model
+  - [x] query()
+  - [x] list()
   - [ ] build()
   - [ ] fromscratch()
+  - [ ] load()
+    - [x] name
+    - [ ] url
 ## Potentially TODO
 - [ ] Dataset
   - [ ] create()
