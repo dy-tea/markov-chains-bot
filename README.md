@@ -9,6 +9,7 @@ See [here](https://github.com/krypt0nn/markov-chains) for actual implementation.
 - [ ] Model
   - [x] query()
   - [x] list()
+  - [x] info()
   - [ ] build()
   - [ ] fromscratch()
   - [x] load()

@@ -15,7 +15,7 @@ use chrono::Local;
 
 use markov_chains::prelude::*;
 
-#[poise::command(prefix_command, slash_command, subcommands("build", "fromscratch", "load", "list"))]
+#[poise::command(prefix_command, slash_command, subcommands("build", "fromscratch", "load", "list", "info"))]
 pub async fn model(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
@@ -283,6 +283,88 @@ pub async fn list(
             }).await?;
         }
     }
+
+    Ok(())
+}
+
+// See https://github.com/krypt0nn/markov-chains/blob/master/src/cli/model.rs
+
+/// Get info of currently loaded model
+#[poise::command(prefix_command, slash_command)]
+pub async fn info(
+    ctx: Context<'_>,
+) -> Result<(), Error> {
+    let model = ctx.data().model.lock().await;
+
+    let chains = (
+        model.transitions()
+            .trigrams_len()
+            .map(|len| len.to_string())
+            .unwrap_or(String::from("N/A")),
+
+        model.transitions()
+            .bigrams_len()
+            .map(|len| len.to_string())
+            .unwrap_or(String::from("N/A")),
+
+        model.transitions()
+            .unigrams_len()
+    );
+
+
+    let avg_paths = (
+        model.transitions()
+            .calc_avg_trigram_paths()
+            .map(|avg| avg.to_string())
+            .unwrap_or(String::from("N/A")),
+
+        model.transitions()
+            .calc_avg_bigram_paths()
+            .map(|avg| avg.to_string())
+            .unwrap_or(String::from("N/A")),
+
+        format!("{:.4}", model.transitions().calc_avg_unigram_paths())
+    );
+
+    let variety = (
+        model.transitions()
+            .calc_trigram_variety()
+            .map(|variety| variety.to_string())
+            .unwrap_or(String::from("N/A")),
+
+        model.transitions()
+            .calc_bigram_variety()
+            .map(|variety| variety.to_string())
+            .unwrap_or(String::from("N/A")),
+
+        format!("{:.4}%", model.transitions().calc_unigram_variety() * 100.0)
+    );
+
+    let model_name = ctx.data().model_name.lock().await.clone();
+
+    ctx.say(format!(
+        "## Model Info
+- **Name:**\t`{}`
+- **Trigrams:**\t`{}`
+- **Bigrams:**\t`{}`
+- **Unigrams:**\t`{}`
+- **Avg Trigram Paths:**\t`{}`
+- **Avg Bigram Paths:**\t`{}`
+- **Avg Unigram Paths:**\t`{}`
+- **Trigram Variety:**\t`{}`
+- **Bigram Variety:**\t`{}`
+- **Unigram Variety:**\t`{}`",
+        model_name,
+        chains.0,
+        chains.1,
+        chains.2,
+        avg_paths.0,
+        avg_paths.1,
+        avg_paths.2,
+        variety.0,
+        variety.1,
+        variety.2
+    )).await?;
 
     Ok(())
 }
