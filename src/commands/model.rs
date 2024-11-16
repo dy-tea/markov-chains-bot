@@ -315,12 +315,12 @@ pub async fn info(
     let avg_paths = (
         model.transitions()
             .calc_avg_trigram_paths()
-            .map(|avg| avg.to_string())
+            .map(|avg| format!("{:.4}", avg))
             .unwrap_or(String::from("N/A")),
 
         model.transitions()
             .calc_avg_bigram_paths()
-            .map(|avg| avg.to_string())
+            .map(|avg| format!("{:.4}", avg))
             .unwrap_or(String::from("N/A")),
 
         format!("{:.4}", model.transitions().calc_avg_unigram_paths())
@@ -329,12 +329,12 @@ pub async fn info(
     let variety = (
         model.transitions()
             .calc_trigram_variety()
-            .map(|variety| variety.to_string())
+            .map(|variety| format!("{:.4}%", variety * 100.0))
             .unwrap_or(String::from("N/A")),
 
         model.transitions()
             .calc_bigram_variety()
-            .map(|variety| variety.to_string())
+            .map(|variety| format!("{:.4}%", variety * 100.0))
             .unwrap_or(String::from("N/A")),
 
         format!("{:.4}%", model.transitions().calc_unigram_variety() * 100.0)
@@ -345,16 +345,12 @@ pub async fn info(
     ctx.say(format!(
         "## Model Info
 - **Name:**\t`{}`
-- **Trigrams:**\t`{}`
-- **Bigrams:**\t`{}`
-- **Unigrams:**\t`{}`
-- **Avg Trigram Paths:**\t`{}`
-- **Avg Bigram Paths:**\t`{}`
-- **Avg Unigram Paths:**\t`{}`
-- **Trigram Variety:**\t`{}`
-- **Bigram Variety:**\t`{}`
-- **Unigram Variety:**\t`{}`",
+- **Total Tokens:**\t`{}`
+- **Chains:**\t`{}`\t/\t`{}`\t/\t`{}`
+- **Avg Paths:**\t`{}`\t/\t`{}`\t/\t`{}`
+- **Variety:**\t`{}`\t/\t`{}`\t/\t`{}`",
         model_name,
+        model.tokens().len(),
         chains.0,
         chains.1,
         chains.2,
