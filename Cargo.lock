@@ -1101,7 +1101,7 @@ dependencies = [
 
 [[package]]
 name = "markov-chains-bot"
-version = "1.0.1"
+version = "1.1.0"
 dependencies = [
  "markov-chains",
  "poise",

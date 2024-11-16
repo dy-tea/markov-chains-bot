@@ -3,7 +3,10 @@ use std::{
     fs::read_dir
 };
 
-pub use crate::global::*;
+use crate::{
+    global::*,
+    utils::pretty_bytes
+};
 
 use markov_chains::prelude::*;
 
@@ -184,7 +187,14 @@ pub async fn list(
                 if let Ok(entry) = entry {
                     if let Ok(name) = entry.file_name().into_string() {
                         if name.ends_with(".model") {
-                            models.push(name.trim_end_matches(".model").to_string());
+                            if let Ok(metadata) = entry.metadata() {
+                                let line = format!(
+                                    "**Name:**\t`{}`\t**Size:**\t`{}`",
+                                    name.trim_end_matches(".model"),
+                                    pretty_bytes(metadata.len())
+                                );
+                                models.push(line);
+                            }
                         }
                     }
                 }
@@ -192,7 +202,7 @@ pub async fn list(
 
             // Edit with list of models
             response.edit(ctx, poise::CreateReply {
-                content: Some(format!("## Available models:\n- `{}`", models.join("`\n- `"))),
+                content: Some(format!("## Available models:\n- {}", models.join("\n- "))),
                 ..Default::default()
             }).await?;
         }
