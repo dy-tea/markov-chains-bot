@@ -16,7 +16,8 @@ pub async fn query(
     let params = ctx.data().params.lock().await.clone();
 
     // Display the current query
-    ctx.say(format!("**{}** queried `{}` on model **{}**", ctx.author().display_name(), query, model_name)).await?;
+    let query_message = format!("## Created Query\n- **Model:**\t`{}`\n- **Query:**\t `{}`\n- **Status:**\t",  model_name, query);
+    let query_reply = ctx.say(format!("{}`Querying...`", query_message)).await?;
 
     // Generate the current query
     let message_start = query.clone();
@@ -59,6 +60,12 @@ pub async fn query(
             }
         }
     }
+
+    // Edit message to show it's completed
+    query_reply.edit(ctx, poise::CreateReply {
+        content: Some(format!("{}`Completed`", query_message)),
+        ..Default::default()
+    }).await?;
 
     Ok(())
 }
