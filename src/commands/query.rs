@@ -6,35 +6,14 @@ pub async fn query(
     ctx: Context<'_>,
     #[description = "Starting query to run the current model off"] query: String,
 ) -> Result<(), Error> {
-    // Get temporary data
-    let temp = ctx.data().temp.lock().await;
-
     // Get the currently loaded model
-    let model = match temp.get("model").unwrap() {
-        GlobalData::Model(model) => model.clone(),
-        _ => {
-            ctx.say("**ERROR: No model loaded**").await?;
-            return Ok(());
-        }
-    };
+    let model = ctx.data().model.lock().await.clone();
 
     // Get the model name
-    let model_name = match temp.get("model_name").unwrap() {
-        GlobalData::ModelName(name) => name.clone(),
-        _ => {
-            ctx.say("**ERROR: No model name loaded**").await?;
-            return Ok(());
-        }
-    };
+    let model_name = ctx.data().model_name.lock().await.clone();
 
     // Get the current parameters
-    let params = match temp.get("params").unwrap() {
-        GlobalData::Params(params) => params.clone(),
-        _ => {
-            ctx.say("**ERROR: No parameters loaded**").await?;
-            return Ok(());
-        }
-    };
+    let params = ctx.data().params.lock().await.clone();
 
     // Display the current query
     ctx.say(format!("**{}** queried `{}` on model **{}**", ctx.author().display_name(), query, model_name)).await?;

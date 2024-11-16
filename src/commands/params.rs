@@ -21,29 +21,19 @@ pub async fn set(
     #[description = "Do not use bigrams for text generation"] no_bigrams: Option<bool>,
     #[description = "Do not use trigrams for text generation"] no_trigrams: Option<bool>,
 ) -> Result<(), Error> {
-    let mut temp = ctx.data().temp.lock().await;
-    let mut data = match temp.get("params").unwrap() {
-        GlobalData::Params(data) => data.clone(),
-        _ => {
-            ctx.say("**ERROR: No parameters loaded**").await?;
-            return Ok(());
-        }
-    };
+    let mut params = ctx.data().params.lock().await;
 
-    data = GenerationParams {
-        temperature: temperature.unwrap_or(data.temperature),
-        temperature_alpha: temperature_alpha.unwrap_or(data.temperature_alpha),
-        repeat_penalty: repeat_penalty.unwrap_or(data.repeat_penalty),
-        repeat_penalty_window: repeat_penalty_window.unwrap_or(data.repeat_penalty_window),
-        k_normal: k_normal.unwrap_or(data.k_normal),
-        min_len: min_len.unwrap_or(data.min_len),
-        max_len: max_len.unwrap_or(data.max_len),
-        no_bigrams: no_bigrams.unwrap_or(data.no_bigrams),
-        no_trigrams: no_trigrams.unwrap_or(data.no_trigrams),
+    *params = GenerationParams {
+        temperature: temperature.unwrap_or(params.temperature),
+        temperature_alpha: temperature_alpha.unwrap_or(params.temperature_alpha),
+        repeat_penalty: repeat_penalty.unwrap_or(params.repeat_penalty),
+        repeat_penalty_window: repeat_penalty_window.unwrap_or(params.repeat_penalty_window),
+        k_normal: k_normal.unwrap_or(params.k_normal),
+        min_len: min_len.unwrap_or(params.min_len),
+        max_len: max_len.unwrap_or(params.max_len),
+        no_bigrams: no_bigrams.unwrap_or(params.no_bigrams),
+        no_trigrams: no_trigrams.unwrap_or(params.no_trigrams),
     };
-
-    temp.remove("params").unwrap();
-    temp.insert("params", GlobalData::Params(data));
 
     let current_params = format!(
         "**Params have been updated**
@@ -58,15 +48,15 @@ pub async fn set(
 - max_len = {}
 - no_bigrams = {}
 - no_trigrams = {}",
-        data.temperature,
-        data.temperature_alpha,
-        data.repeat_penalty,
-        data.repeat_penalty_window,
-        data.k_normal,
-        data.min_len,
-        data.max_len,
-        data.no_bigrams,
-        data.no_trigrams
+        params.temperature,
+        params.temperature_alpha,
+        params.repeat_penalty,
+        params.repeat_penalty_window,
+        params.k_normal,
+        params.min_len,
+        params.max_len,
+        params.no_bigrams,
+        params.no_trigrams
     );
 
     ctx.say(current_params).await?;
@@ -77,11 +67,8 @@ pub async fn set(
 /// Reset model parameters to default values
 #[poise::command(prefix_command, slash_command)]
 pub async fn reset(ctx: Context<'_>) -> Result<(), Error>  {
-    // Get temporary data
-    let mut temp = ctx.data().temp.lock().await;
-
-    temp.remove("params").unwrap();
-    temp.insert("params", GlobalData::Params(GenerationParams::default()));
+    let mut params = ctx.data().params.lock().await;
+    *params = GenerationParams::default();
 
     ctx.say("**Params have been reset**").await?;
 

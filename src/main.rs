@@ -17,19 +17,12 @@ async fn main() {
     let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
     let intents = serenity::GatewayIntents::non_privileged();
 
-    // Create default temp data
-    let mut temp = HashMap::new();
-
     // Load default model
     let default_model = postcard::from_bytes::<Model>(
         &std::fs::read(format!("{}/{}.model", MODEL_DIR, DEFAULT_MODEL_NAME))
             .expect("Failed to read model file"),
     )
     .expect("Failed to deserialize model");
-
-    temp.insert("model", GlobalData::Model(default_model));
-    temp.insert("params", GlobalData::Params(GenerationParams::default()));
-    temp.insert("model_name", GlobalData::ModelName(DEFAULT_MODEL_NAME.to_string()));
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -40,7 +33,9 @@ async fn main() {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
-                    temp: Arc::new(Mutex::new(temp)),
+                    model: Arc::new(Mutex::new(default_model)),
+                    params: Arc::new(Mutex::new(GenerationParams::default())),
+                    model_name: Arc::new(Mutex::new(DEFAULT_MODEL_NAME.to_string())),
                 })
             })
         })

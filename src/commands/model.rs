@@ -132,16 +132,13 @@ pub async fn load(
             }
         };
 
-        // Get temp data
-        let mut temp = ctx.data().temp.lock().await;
-
         // Update current model
-        temp.remove("model");
-        temp.insert("model", GlobalData::Model(model_data.clone()));
+        let mut model = ctx.data().model.lock().await;
+        *model = model_data.clone();
 
         // Update current model name
-        temp.remove("model_name");
-        temp.insert("model_name", GlobalData::ModelName(name.clone()));
+        let mut model_name = ctx.data().model_name.lock().await;
+        *model_name = name.clone();
 
         // Edit the message with loaded status
         status.edit(ctx, poise::CreateReply {
