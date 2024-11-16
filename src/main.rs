@@ -11,6 +11,8 @@ pub use global::*;
 pub mod commands;
 pub use commands::*;
 
+pub mod utils;
+
 #[tokio::main]
 async fn main() {
     let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
