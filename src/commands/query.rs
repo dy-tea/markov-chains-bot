@@ -28,10 +28,22 @@ pub async fn query(
         .collect::<Option<Vec<_>>>();
 
     let Some(query) = query else {
+        // Failed to find query in dataset
+        query_reply.edit(ctx, poise::CreateReply {
+            content: Some(format!("{}`Failed`", query_message)),
+            ..Default::default()
+        }).await?;
+
         return Err("**ERROR: Query not in dataset**".into());
     };
 
     if query.is_empty() {
+        // Query cannot be empty
+        query_reply.edit(ctx, poise::CreateReply {
+            content: Some(format!("{}`Failed`", query_message)),
+            ..Default::default()
+        }).await?;
+
         return Err("**ERROR: Query cannot be empty**".into());
     }
 

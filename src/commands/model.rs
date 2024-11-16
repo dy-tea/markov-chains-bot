@@ -229,7 +229,7 @@ pub async fn load(
 
         // Edit the message with loaded status
         status.edit(ctx, poise::CreateReply {
-            content: Some(format!("Model `{}` loaded successfully", name)),
+            content: Some(format!("Successfully loaded model `{}` ", name)),
             ..Default::default()
         }).await?;
 
