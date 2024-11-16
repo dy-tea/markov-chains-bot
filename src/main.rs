@@ -2,7 +2,6 @@ use poise::serenity_prelude as serenity;
 
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use std::collections::HashMap;
 
 use markov_chains::prelude::*;
 

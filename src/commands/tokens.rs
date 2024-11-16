@@ -2,13 +2,6 @@ use std::path::PathBuf;
 
 pub use crate::global::*;
 
-use markov_chains::prelude::{
-    Messages,
-    Tokens
-};
-
-use super::search_files;
-
 #[poise::command(prefix_command, slash_command, subcommands("parse", "merge"))]
 pub async fn tokens(
     ctx: Context<'_>,

@@ -2,13 +2,6 @@ use std::path::PathBuf;
 
 pub use crate::global::*;
 
-use crate::search_files;
-use markov_chains::{
-    dataset::Dataset,
-    tokens::Tokens,
-    tokenized_messages::TokenizedMessages
-};
-
 #[poise::command(prefix_command, slash_command, subcommands("create", "addmessages", "addtokens", "checkword"))]
 pub async fn dataset(
     ctx: Context<'_>
