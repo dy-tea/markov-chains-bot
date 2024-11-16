@@ -108,8 +108,15 @@ pub async fn load(
     #[description = "Link to the model"] url: Option<PathBuf>,
 ) -> Result<(), Error> {
     if let Some(name) = name {
+        // If name ends with .model, remove it
+        let name = if name.ends_with(".model") {
+            name.trim_end_matches(".model").to_string()
+        } else {
+            name
+        };
+
         // Send a message with the loading status
-        let status = ctx.say(format!("Attempting to load model **{}.model**", name)).await?;
+        let status = ctx.say(format!("Attempting to load model `{}`", name)).await?;
 
         // Load model from file
         let model_data = match std::fs::read(format!("{}/{}.model", MODEL_DIR, name)) {
@@ -117,7 +124,7 @@ pub async fn load(
                 Ok(model) => model,
                 Err(err) => {
                     status.edit(ctx, poise::CreateReply {
-                        content: Some(format!("**ERROR: Failed to load model \"{}.model\"** `{}`", name, err)),
+                        content: Some(format!("**ERROR: Failed to load model** `{}`\n**ERROR:** `{}`", name, err)),
                         ..Default::default()
                     }).await?;
                     return Ok(());
@@ -125,7 +132,7 @@ pub async fn load(
             }
             Err(err) => {
                 status.edit(ctx, poise::CreateReply {
-                    content: Some(format!("**ERROR: Failed to load model \"{}.model\"** `{}`", name, err)),
+                    content: Some(format!("**ERROR: Failed to load model** `{}`\n**ERROR:** `{}`", name, err)),
                     ..Default::default()
                 }).await?;
                 return Ok(());
@@ -142,7 +149,7 @@ pub async fn load(
 
         // Edit the message with loaded status
         status.edit(ctx, poise::CreateReply {
-            content: Some(format!("Model **{}** loaded successfully", name)),
+            content: Some(format!("Model `{}` loaded successfully", name)),
             ..Default::default()
         }).await?;
 
