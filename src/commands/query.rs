@@ -28,13 +28,11 @@ pub async fn query(
         .collect::<Option<Vec<_>>>();
 
     let Some(query) = query else {
-        ctx.say("**ERROR: Query not in dataset**").await?;
-        return Ok(());
+        return Err("**ERROR: Query not in dataset**".into());
     };
 
     if query.is_empty() {
-        ctx.say("**ERROR: Query cannot be empty**").await?;
-        return Ok(());
+        return Err("**ERROR: Query cannot be empty**".into());
     }
 
     let generated = ctx.say("Generating...").await?;
@@ -43,8 +41,7 @@ pub async fn query(
         match token {
             Ok(token) => {
                 let Some(word) = model.tokens().find_word(token) else {
-                    ctx.say(format!("**ERROR: Failed to find word for token** `{}`", token)).await?;
-                    break;
+                    return Err(format!("**ERROR: Failed to find word for token** `{}`", token).into());
                 };
 
                 message = format!("{} {}", message.clone(), word);
@@ -55,8 +52,7 @@ pub async fn query(
             }
 
             Err(err) => {
-                ctx.say(format!("**ERROR: Failed to generate** `{}`", err)).await?;
-                break;
+                return Err(format!("**ERROR: Failed to generate** `{}`", err).into());
             }
         }
     }

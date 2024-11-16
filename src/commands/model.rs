@@ -163,7 +163,7 @@ pub async fn load(
                     })
                     .unwrap_or_else(|| {
                         let now = Local::now();
-                        format!("{}.model", now.format("%Y-%m-%d-%H-%M-%S"))
+                        format!("{}", now.format("%Y-%m-%d-%H-%M-%S"))
                     });
 
                 // Remove .model extension if present
