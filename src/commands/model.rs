@@ -142,7 +142,9 @@ pub async fn fromscratch(
             .with_tokens(tokens);
 
         // Build the model
-        let model = Model::build(dataset, bigrams, trigrams);
+        let model = Model::build(dataset, bigrams, trigrams)
+            .with_header("name", name.clone())
+            .with_header("created_at", Local::now().to_string());
 
         // Store the model
         std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
