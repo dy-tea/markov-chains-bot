@@ -13,7 +13,10 @@ use reqwest::header::CONTENT_DISPOSITION;
 
 use chrono::Local;
 
-use markov_chains::prelude::*;
+use markov_chains::{
+    prelude::*,
+    dataset::Dataset,
+};
 
 #[poise::command(prefix_command, slash_command, subcommands("build", "fromscratch", "load", "list", "info"))]
 pub async fn model(ctx: Context<'_>) -> Result<(), Error> {
@@ -58,56 +61,102 @@ pub async fn build(ctx: Context<'_>,
 #[poise::command(prefix_command, slash_command)]
 pub async fn fromscratch(
     ctx: Context<'_>,
-    #[description = "Paths to the plain messages file"] paths: Vec<PathBuf>,
+    #[description = "Link to the plain messages file"] url: String,
     #[description = "Build bigrams transitions table"] bigrams: bool,
     #[description = "Build trigrams transitions table"] trigrams: bool,
-    #[description = "Header to add to the model"] header: Vec<String>,
-    #[description = "Path to the model output"] output: PathBuf,
+    #[description = "Model name (overwrites file name if provided)"] name: Option<String>,
 ) -> Result<(), Error> {
-    ctx.say("**UNIMPLEMENTED**").await?;
-    /*
-    println!("Parsing messages...");
+    let status = ctx.say(format!("Attempting to download url {}", url)).await?;
 
-    let mut messages = Messages::default();
+    let response = reqwest::Client::new().get(url.clone()).send().await;
 
-    for path in search_files(paths) {
-        println!("Parsing {:?}...", path);
+    let mut model_name = name.clone();
 
-        let parsed = Messages::parse_from_messages(path)?;
+    match response {
+        Ok(response) => {
+            // Got response, update the user
+            status.edit(ctx, poise::CreateReply {
+                content: Some(format!("Download started for url {}", url)),
+                ..Default::default()
+            }).await?;
 
-        messages = messages.merge(parsed);
+            // Get filename from content disposition header
+            let name = response
+                .headers()
+                .get(CONTENT_DISPOSITION)
+                .and_then(|header| header.to_str().ok())
+                .and_then(|header_str| {
+                    header_str
+                        .split(';')
+                        .find_map(|part| {
+                            if part.trim().starts_with("filename=") {
+                                part.trim().strip_prefix("filename=").map(|s| s.trim_matches('"').to_string())
+                            } else {
+                                None
+                            }
+                        })
+                })
+                .unwrap_or_else(|| {
+                    let now = Local::now();
+                    format!("{}", now.format("%Y-%m-%d-%H-%M-%S"))
+                });
+
+            // Create the text file
+            let mut destination = File::create(&name)?;
+            let content = response.bytes().await?;
+            destination.write_all(&content)?;
+
+            // Set the model name
+            model_name = if model_name.is_some() {
+                model_name
+            } else {
+                Some(name.trim_end_matches(".txt").to_string())
+            };
+
+            // Set the download as completed
+            status.edit(ctx, poise::CreateReply {
+                content: Some(format!("Download completed for url {}", url)),
+                ..Default::default()
+            }).await?;
+        },
+        Err(err) => {
+            return Err(format!("**ERROR: Invalid URL** {}\n**ERROR:** `{}`", url, err).into());
+        },
     }
 
-    println!("Generating tokens...");
+    if let Some(name) = model_name {
+        let status = ctx.say(format!("Attempting to build model from file {}.txt", name)).await?;
 
-    let tokens = Tokens::parse_from_messages(&messages);
+        // Parse messages from input file
+        let messages = Messages::parse_from_messages(format!("{}.txt", name))?;
 
-    println!("Tokenizing messages...");
+        // Parse tokens from messages
+        let tokens = Tokens::parse_from_messages(&messages);
 
-    let tokenized_messages = TokenizedMessages::tokenize_message(&messages, &tokens)?;
+        // Tokenize messages
+        let tokenized_messages = TokenizedMessages::tokenize_message(&messages, &tokens)?;
 
-    println!("Creating dataset...");
+        // Create the dataset
+        let dataset = Dataset::default()
+            .with_messages(tokenized_messages, 1)
+            .with_tokens(tokens);
 
-    let dataset = Dataset::default()
-        .with_messages(tokenized_messages, 1)
-        .with_tokens(tokens);
+        // Build the model
+        let model = Model::build(dataset, bigrams, trigrams);
 
-    println!("Building model...");
+        // Store the model
+        std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
 
-    let mut model = Model::build(dataset, bigrams, trigrams);
+        // Set the model as completed
+        status.edit(ctx, poise::CreateReply {
+            content: Some(format!("Successfully build model `{}`", name)),
+            ..Default::default()
+        }).await?;
 
-    for header in header {
-        if let Some((key, value)) = header.split_once('=') {
-            model = model.with_header(key, value);
-        }
+        // Delete the text file
+        std::fs::remove_file(format!("{}.txt", name))?;
     }
 
-    println!("Storing model...");
-
-    std::fs::write(output, postcard::to_allocvec(&model)?)?;
-
-    println!("Done");
-    */
     Ok(())
 }
 
@@ -155,7 +204,9 @@ pub async fn load(
                             .split(';')
                             .find_map(|part| {
                                 if part.trim().starts_with("filename=") {
-                                    part.trim().strip_prefix("filename=").map(|s| s.trim_matches('"').to_string())
+                                    part.trim()
+                                        .strip_prefix("filename=")
+                                        .map(|s| s.trim_matches('"').to_string())
                                 } else {
                                     None
                                 }

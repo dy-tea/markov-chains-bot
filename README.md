@@ -12,7 +12,7 @@ See [here](https://github.com/krypt0nn/markov-chains) for actual implementation.
   - [x] list()
   - [x] info()
   - [ ] build()
-  - [ ] fromscratch()
+  - [x] fromscratch()
   - [x] load()
     - [x] name
     - [x] url
