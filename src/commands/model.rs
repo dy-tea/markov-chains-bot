@@ -348,6 +348,12 @@ pub async fn info(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
     let model = ctx.data().model.lock().await;
+    let headers = model.headers().clone();
+
+    let formatted_headers = headers.iter()
+        .map(|(key, value)| format!("- **{}:**\t`{}`", key, value))
+        .collect::<Vec<String>>()
+        .join("\n");
 
     let chains = (
         model.transitions()
@@ -393,16 +399,15 @@ pub async fn info(
         format!("{:.4}%", model.transitions().calc_unigram_variety() * 100.0)
     );
 
-    let model_name = ctx.data().model_name.lock().await.clone();
-
     ctx.say(format!(
-        "## Model Info
-- **Name:**\t`{}`
+        "## Headers
+{}
+## Model Info
 - **Total Tokens:**\t`{}`
 - **Chains:**\t`{}`\t/\t`{}`\t/\t`{}`
 - **Avg Paths:**\t`{}`\t/\t`{}`\t/\t`{}`
 - **Variety:**\t`{}`\t/\t`{}`\t/\t`{}`",
-        model_name,
+        formatted_headers,
         model.tokens().len(),
         chains.0,
         chains.1,
