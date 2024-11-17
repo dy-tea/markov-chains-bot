@@ -7,13 +7,13 @@ pub async fn query(
     #[description = "Starting query to run the current model off"] query: String,
 ) -> Result<(), Error> {
     // Get the currently loaded model
-    let model = ctx.data().model.lock().await.clone();
+    let model = ctx.data().model.lock().await;
 
     // Get the model name
-    let model_name = ctx.data().model_name.lock().await.clone();
+    let model_name = ctx.data().model_name.lock().await;
 
     // Get the current parameters
-    let params = ctx.data().params.lock().await.clone();
+    let params = ctx.data().params.lock().await;
 
     // Display the current query
     let query_message = format!("## Created Query\n- **Model:**\t`{}`\n- **Query:**\t `{}`\n- **Status:**\t",  model_name, query);
