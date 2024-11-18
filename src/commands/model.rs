@@ -66,7 +66,6 @@ pub async fn fromscratch(
     #[description = "Build trigrams transitions table"] trigrams: bool,
     #[description = "Model name (overwrites file name if provided)"] name: Option<String>,
     #[description = "Model description"] description: Option<String>,
-    #[description = "Model version"] version: Option<String>,
 ) -> Result<(), Error> {
     let status = ctx.say(format!("Attempting to download url {}", url)).await?;
 
@@ -148,13 +147,9 @@ pub async fn fromscratch(
             .with_header("name", name.clone())
             .with_header("created_at", Local::now().to_string());
 
-        // Add optional headers
+        // Add optional description
         if let Some(description) = description {
             model = model.with_header("description", description);
-        }
-
-        if let Some(version) = version {
-            model = model.with_header("version", version);
         }
 
         // Store the model
