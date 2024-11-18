@@ -56,7 +56,8 @@ pub async fn query(
                     return Err(format!("**ERROR: Failed to find word for token** `{}`", token).into());
                 };
 
-                message = format!("{} {}", message.clone(), word);
+                message.push_str(" ");
+                message.push_str(word);
             }
             Err(err) => {
                 return Err(format!("**ERROR: Failed to generate** `{}`", err).into());
