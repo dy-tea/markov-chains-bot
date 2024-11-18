@@ -57,17 +57,18 @@ pub async fn query(
                 };
 
                 message = format!("{} {}", message.clone(), word);
-                generated.edit(ctx, poise::CreateReply {
-                    content: Some(message.clone()),
-                    ..Default::default()
-                }).await?;
             }
-
             Err(err) => {
                 return Err(format!("**ERROR: Failed to generate** `{}`", err).into());
             }
         }
     }
+
+    // Display the generated message
+    generated.edit(ctx, poise::CreateReply {
+        content: Some(message.clone()),
+        ..Default::default()
+    }).await?;
 
     // Edit message to show it's completed
     query_reply.edit(ctx, poise::CreateReply {
