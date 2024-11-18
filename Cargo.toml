@@ -1,10 +1,10 @@
 [package]
 name = "markov-chains-bot"
-version = "1.5.1"
-description = "Markov chains bot"
+version = "1.5.2"
+description = "Markov chains discord bot"
 authors = ["Dylan Donnell <dylan.donnell@student.griffith.ie>"]
 repository = "https://github.com/dy-tea/markov-chains-bot"
-license = "MIT"
+license = "GPL-3.0"
 edition = "2021"
 
 [profile.dev]
