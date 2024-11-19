@@ -76,17 +76,15 @@ pub async fn build(ctx: Context<'_>,
             let dataset = postcard::from_bytes::<Dataset>(&content)?;
 
             // Get optional model name
-            let model_name = {
-                if let Some(ref mn) = model_name {
-                    mn.split('.').next().unwrap_or(&mn)
-                } else {
-                    name.split('.').next().unwrap_or(&name)
-                }
+            let model_name = if let Some(mn) = model_name {
+                mn.split('.').next().unwrap_or(&mn).to_owned()
+            } else {
+                name.split('.').next().unwrap_or(&name).to_owned()
             };
 
             // Create model from dataset
             let mut model = Model::build(dataset, bigrams, trigrams)
-                .with_header("name", model_name)
+                .with_header("name", model_name.clone())
                 .with_header("version", MARKOV_CHAINS_VERSION);
 
             // Add optional description
@@ -95,11 +93,11 @@ pub async fn build(ctx: Context<'_>,
             }
 
             // Write model to file
-            std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
+            std::fs::write(format!("{}/{}.model", MODEL_DIR, model_name), postcard::to_allocvec(&model)?)?;
 
             // Update user
             status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Model `{}` built successfully", name)),
+                content: Some(format!("Model `{}` built successfully", model_name)),
                 ..Default::default()
             }).await?;
         }
