@@ -5,6 +5,7 @@ use tokio::sync::Mutex;
 
 pub const MODEL_DIR: &str = "models";
 pub const DEFAULT_MODEL_NAME: &str = "kleden4";
+pub const MARKOV_CHAINS_VERSION: & str = "1.4.4";
 
 pub struct Data {
     pub model: Arc<Mutex<Model>>,

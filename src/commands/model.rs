@@ -1,8 +1,4 @@
-use std::{
-    path::PathBuf,
-    fs::{read_dir, File},
-    io::Write
-};
+use std::fs::read_dir;
 
 use crate::{
     global::*,
@@ -10,78 +6,21 @@ use crate::{
 };
 
 use reqwest::header::CONTENT_DISPOSITION;
-
 use chrono::Local;
+use bytes::Bytes;
 
 use markov_chains::{
     prelude::*,
     dataset::Dataset,
 };
 
-#[poise::command(prefix_command, slash_command, subcommands("build", "fromscratch", "load", "list", "info"))]
-pub async fn model(ctx: Context<'_>) -> Result<(), Error> {
-    Ok(())
-}
-
-/// Build language model
-#[poise::command(prefix_command, slash_command)]
-pub async fn build(ctx: Context<'_>,
-    #[description = "Path to dataset bundle"] dataset: PathBuf,
-    #[description = "Build bigrams transitions table"] bigrams: bool,
-    #[description = "Build trigrams transitions table"] trigrams: bool,
-    #[description = "Header to add to the model"] header: Vec<String>,
-    #[description = "Path to the model output"] output: PathBuf,
-) -> Result<(), Error> {
-    ctx.say("**UNIMPLEMENTED**").await?;
-    /*
-    println!("Reading dataset bundle...");
-
-    let messages = postcard::from_bytes::<Dataset>(&std::fs::read(dataset)?)?;
-
-    println!("Building model...");
-
-    let mut model = Model::build(messages, bigrams, trigrams);
-
-    for header in header {
-        if let Some((key, value)) = header.split_once('=') {
-            model = model.with_header(key, value);
-        }
-    }
-
-    println!("Storing model...");
-
-    std::fs::write(output, postcard::to_allocvec(&model)?)?;
-
-    println!("Done");
-    */
-    Ok(())
-}
-
-/// Build language model from plain messages files
-#[poise::command(prefix_command, slash_command)]
-pub async fn fromscratch(
-    ctx: Context<'_>,
-    #[description = "Link to the plain messages file"] url: String,
-    #[description = "Build bigrams transitions table"] bigrams: bool,
-    #[description = "Build trigrams transitions table"] trigrams: bool,
-    #[description = "Model name (overwrites file name if provided)"] name: Option<String>,
-    #[description = "Model description"] description: Option<String>,
-) -> Result<(), Error> {
-    let status = ctx.say(format!("Attempting to download url {}", url)).await?;
-
-    let response = reqwest::Client::new().get(url.clone()).send().await;
-
-    let mut model_name = name.clone();
+// download file at the specfied url, return the name and content
+pub async fn download(url: String) -> Result<(String, Bytes), Error> {
+    let response = reqwest::get(&url).await;
 
     match response {
         Ok(response) => {
-            // Got response, update the user
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Download started for url {}", url)),
-                ..Default::default()
-            }).await?;
-
-            // Get filename from content disposition header
+            // Prase name from headers
             let name = response
                 .headers()
                 .get(CONTENT_DISPOSITION)
@@ -102,34 +41,106 @@ pub async fn fromscratch(
                     format!("{}", now.format("%Y-%m-%d-%H-%M-%S"))
                 });
 
-            // Create the text file
-            let mut destination = File::create(&name)?;
-            let content = response.bytes().await?;
-            destination.write_all(&content)?;
+            // Return the content
+            let content = response.bytes().await.unwrap();
+            Ok((name, content))
+        },
+        Err(e) => Err(e.into()),
+    }
+}
 
-            // Set the model name
-            model_name = if model_name.is_some() {
-                model_name
-            } else {
-                Some(name.trim_end_matches(".txt").to_string())
-            };
+#[poise::command(prefix_command, slash_command, subcommands("build", "fromscratch", "load", "list", "info"))]
+pub async fn model(_: Context<'_>) -> Result<(), Error> {
+    Ok(())
+}
 
-            // Set the download as completed
+/// Build language model
+#[poise::command(prefix_command, slash_command)]
+pub async fn build(ctx: Context<'_>,
+    #[description = "Link to dataset bundle"] url: String,
+    #[description = "Build bigrams transitions table"] bigrams: bool,
+    #[description = "Build trigrams transitions table"] trigrams: bool,
+    #[description = "Model name (overwrites file name if provided)"] model_name: Option<String>,
+    #[description = "Model description"] description: Option<String>,
+) -> Result<(), Error> {
+    let status = ctx.say(format!("Attempting to download url {}", url)).await?;
+
+    match download(url).await {
+        Ok((name, content)) => {
             status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Download completed for url {}", url)),
+                content: Some(format!("Downloaded model to `{}`", name)),
                 ..Default::default()
             }).await?;
-        },
-        Err(err) => {
-            return Err(format!("**ERROR: Invalid URL** {}\n**ERROR:** `{}`", url, err).into());
-        },
+
+            // Load dataset from content
+            let dataset = postcard::from_bytes::<Dataset>(&content)?;
+
+            // Get optional model name
+            let model_name = {
+                if let Some(ref mn) = model_name {
+                    mn.split('.').next().unwrap_or(&mn)
+                } else {
+                    name.split('.').next().unwrap_or(&name)
+                }
+            };
+
+            // Create model from dataset
+            let mut model = Model::build(dataset, bigrams, trigrams)
+                .with_header("name", model_name)
+                .with_header("version", MARKOV_CHAINS_VERSION);
+
+            // Add optional description
+            if let Some(description) = description {
+                model = model.with_header("description", description);
+            }
+
+            // Write model to file
+            std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
+
+            // Update user
+            status.edit(ctx, poise::CreateReply {
+                content: Some(format!("Model `{}` built successfully", name)),
+                ..Default::default()
+            }).await?;
+        }
+        Err(e) => {
+            status.edit(ctx, poise::CreateReply {
+                content: Some(format!("**ERROR: Failed to download model**\n**ERROR: **`{}`", e.to_string())),
+                ..Default::default()
+            }).await?;
+        }
     }
 
-    if let Some(name) = model_name {
-        let status = ctx.say(format!("Attempting to build model from file {}.txt", name)).await?;
+    Ok(())
+}
+
+/// Build language model from plain messages files
+#[poise::command(prefix_command, slash_command)]
+pub async fn fromscratch(
+    ctx: Context<'_>,
+    #[description = "Link to the plain messages file"] url: String,
+    #[description = "Build bigrams transitions table"] bigrams: bool,
+    #[description = "Build trigrams transitions table"] trigrams: bool,
+    #[description = "Model name (overwrites file name if provided)"] name: Option<String>,
+    #[description = "Model description"] description: Option<String>,
+) -> Result<(), Error> {
+    let status = ctx.say(format!("Attempting to download url {}", url)).await?;
+
+    if let Ok((download_name, content)) = download(url).await {
+        status.edit(ctx, poise::CreateReply {
+            content: Some(format!("Downloaded model to `{}`", download_name)),
+            ..Default::default()
+        }).await?;
+
+        let status = ctx.say(format!("Attempting to build model from file {}.txt", download_name)).await?;
+
+        // Convert content to string array
+        let content = String::from_utf8(content.to_vec())?
+            .split('\n').map(|s| s.to_string())
+            .collect::<Vec<String>>();
 
         // Parse messages from input file
-        let messages = Messages::parse_from_messages(format!("{}.txt", name))?;
+        let messages = Messages::parse_from_lines(&content);
 
         // Parse tokens from messages
         let tokens = Tokens::parse_from_messages(&messages);
@@ -142,10 +153,17 @@ pub async fn fromscratch(
             .with_messages(tokenized_messages, 1)
             .with_tokens(tokens);
 
+        // Get the name
+        let name: String = {
+            let a = name.unwrap_or(download_name);
+            a.split('.').next().unwrap_or(&a).to_string()
+        };
+
         // Build the model
         let mut model = Model::build(dataset, bigrams, trigrams)
             .with_header("name", name.clone())
-            .with_header("created_at", Local::now().to_string());
+            .with_header("created_at", Local::now().to_string())
+            .with_header("version", MARKOV_CHAINS_VERSION);
 
         // Add optional description
         if let Some(description) = description {
@@ -160,9 +178,6 @@ pub async fn fromscratch(
             content: Some(format!("Successfully build model `{}`", name)),
             ..Default::default()
         }).await?;
-
-        // Delete the text file
-        std::fs::remove_file(format!("{}.txt", name))?;
     }
 
     Ok(())
@@ -178,87 +193,51 @@ pub async fn load(
     let status = ctx.say("Attempting to load model").await?;
 
     // If name is passed, use it as model name
-    let mut model_name: Option<String> = if let Some(name) = name {
-        if name.ends_with(".model") {
-            Some(name.trim_end_matches(".model").to_string())
-        } else {
-            Some(name)
-        }
-    } else {
-        None
-    };
+    let mut model_name: Option<String> = name.clone();
 
     // If url is passed, download the model from that url
     if let Some(url) = url {
         let status = ctx.say(format!("Attempting to download model from {}", url)).await?;
 
-        let response = reqwest::Client::new().get(url.clone()).send().await;
-
-        match response {
-            Ok(response) => {
-                // Got response, update the user
+        match download(url).await {
+            Ok((name, content)) => {
                 status.edit(ctx, poise::CreateReply {
-                    content: Some(format!("Download started for url {}", url)),
+                    content: Some(format!("Downloaded model to `{}`", name)),
                     ..Default::default()
                 }).await?;
 
-                // Get filename from content disposition header
-                let mut name = response
-                    .headers()
-                    .get(CONTENT_DISPOSITION)
-                    .and_then(|header| header.to_str().ok())
-                    .and_then(|header_str| {
-                        header_str
-                            .split(';')
-                            .find_map(|part| {
-                                if part.trim().starts_with("filename=") {
-                                    part.trim()
-                                        .strip_prefix("filename=")
-                                        .map(|s| s.trim_matches('"').to_string())
-                                } else {
-                                    None
-                                }
-                            })
-                    })
-                    .unwrap_or_else(|| {
-                        let now = Local::now();
-                        format!("{}", now.format("%Y-%m-%d-%H-%M-%S"))
-                    });
+                // Load dataset from content
+                let model = postcard::from_bytes::<Model>(&content)?;
 
-                // Remove .model extension if present
-                if name.ends_with(".model") {
-                    name = name.trim_end_matches(".model").to_string();
-                }
+                // Get model name from headers, use file name as fallback
+                let name = match model.headers().get("name") {
+                    Some(mn) => mn.split('.').next().unwrap_or(&mn).to_string(),
+                    None => name.split('.').next().unwrap_or(&name).to_string(),
+                };
 
-                // Create the file in the model directory
-                let mut destination = File::create(&format!("{}/{}.model", MODEL_DIR, name))?;
-                let content = response.bytes().await?;
-                destination.write_all(&content)?;
+                // Write model to file
+                std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
 
-                // Set the model name
+                // Update user
+                status.edit(ctx, poise::CreateReply {
+                    content: Some(format!("Model `{}` built successfully", name)),
+                    ..Default::default()
+                }).await?;
+
+                // Update model name
                 model_name = Some(name);
-
-                // Set the download as completed
+            }
+            Err(e) => {
                 status.edit(ctx, poise::CreateReply {
-                    content: Some(format!("Download completed for url {}", url)),
+                    content: Some(format!("**ERROR: Failed to download model**\n**ERROR: **`{}`", e.to_string())),
                     ..Default::default()
                 }).await?;
-            },
-            Err(err) => {
-                return Err(format!("**ERROR: Invalid URL** {}\n**ERROR:** `{}`", url, err).into());
-            },
+            }
         }
     }
 
     // Now either name or url should have set model_name
     if let Some(name) = model_name {
-        // If name ends with .model, remove it
-        let name = if name.ends_with(".model") {
-            name.trim_end_matches(".model").to_string()
-        } else {
-            name
-        };
-
         // Update loading status
         status.edit(ctx, poise::CreateReply {
             content: Some(format!("Attempting to load model `{}`", name)),
@@ -280,7 +259,7 @@ pub async fn load(
 
         // Update current model
         let mut model = ctx.data().model.lock().await;
-        *model = model_data.clone();
+        *model = model_data;
 
         // Update current model name
         let mut model_name = ctx.data().model_name.lock().await;

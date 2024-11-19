@@ -1240,6 +1240,7 @@ dependencies = [
 name = "markov-chains-bot"
 version = "1.5.2"
 dependencies = [
+ "bytes",
  "chrono",
  "markov-chains",
  "poise",

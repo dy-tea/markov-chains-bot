@@ -33,3 +33,4 @@ features = ["alloc"]
 [dependencies]
 reqwest = "0.12"
 chrono = "0.4"
+bytes = "1.0"

@@ -7,11 +7,11 @@ See [here](https://github.com/krypt0nn/markov-chains) for markov chains implemen
   - [x] set()
   - [x] reset()
   - [x] show()
-- [ ] Model
+- [x] Model
   - [x] query()
   - [x] list()
   - [x] info()
-  - [ ] build()
+  - [x] build()
   - [x] fromscratch()
   - [x] load()
     - [x] name
