@@ -1,21 +1,24 @@
 # Markov Chains Discord Bot
-
-See [here](https://github.com/krypt0nn/markov-chains) for markov chains implementation used by this bot.
+This is a Discord Bot that generates text using Markov chains. Models can be generated using plain text files and queried by their tokens. See [here](https://github.com/krypt0nn/markov-chains) for the implementation of the markov chains generator.
 
 ## Supported commands
-- /params
-    - set
-    - reset
-    - show
-- /model
-    - query
-    - list
-    - info
-    - load
-    - build
-    - fromscratch
+- `/query`
+- `/params`
+    - `set`
+    - `reset`
+    - `show`
+- `/model`
+    - `list`
+    - `info`
+    - `load`
+    - `build`
+    - `fromscratch`
 
 ## Usage
-```
-DISCORD_TOKEN=your_token ./markov-chains-bot
-```
+Use `/query <QUERY>` to generate text with the currently loaded model.
+
+Use `/model list` to list the available models.
+
+Use `/model load <MODEL_NAME>` to load a different model.
+
+Use `/model fromscratch <URL>` to load a text file from that url and create a model from it. 
