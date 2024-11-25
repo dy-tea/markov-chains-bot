@@ -1243,6 +1243,7 @@ dependencies = [
  "bytes",
  "chrono",
  "markov-chains",
+ "openssl",
  "poise",
  "postcard",
  "reqwest 0.12.9",
