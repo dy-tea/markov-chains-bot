@@ -2,22 +2,18 @@
 
 See [here](https://github.com/krypt0nn/markov-chains) for markov chains implementation used by this bot.
 
-## TODO
-- [x] Params
-  - [x] set()
-  - [x] reset()
-  - [x] show()
-- [x] Model
-  - [x] query()
-  - [x] list()
-  - [x] info()
-  - [x] build()
-  - [x] fromscratch()
-  - [x] load()
-    - [x] name
-    - [x] url
-
-You can open a pr if you want to try implementing something.
+## Supported commands
+- /params
+    - set
+    - reset
+    - show
+- /model
+    - query
+    - list
+    - info
+    - load
+    - build
+    - fromscratch
 
 ## Usage
 ```
