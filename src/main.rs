@@ -48,6 +48,4 @@ async fn main() {
         .framework(framework)
         .await;
     client.unwrap().start().await.unwrap();
-
-    println!("NOTE: Bot Started!");
 }

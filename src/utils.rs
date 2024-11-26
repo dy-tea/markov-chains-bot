@@ -11,6 +11,6 @@ pub fn pretty_bytes(size: u64) -> String {
     } else if size >= KB {
         format!("{:.2} KB", size as f64 / KB as f64)
     } else {
-        format!("{} bytes", size)
+        format!("{} B", size)
     }
 }

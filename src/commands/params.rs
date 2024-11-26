@@ -59,8 +59,6 @@ pub async fn set(
     };
 
     let formatted_params = format_params(&params);
-
-    println!("NOTE: Updated params:\n{}", formatted_params);
     ctx.say(format!("## Params have been updated\n{}", formatted_params)).await?;
 
     Ok(())
@@ -72,6 +70,7 @@ pub async fn show(ctx: Context<'_>) -> Result<(), Error>  {
     let params = ctx.data().params.lock().await;
 
     ctx.say(format_params(&params.clone())).await?;
+
     Ok(())
 }
 
@@ -81,7 +80,6 @@ pub async fn reset(ctx: Context<'_>) -> Result<(), Error>  {
     let mut params = ctx.data().params.lock().await;
     *params = GenerationParams::default();
 
-    println!("NOTE: Reset params");
     ctx.say("**Params have been reset**").await?;
 
     Ok(())
