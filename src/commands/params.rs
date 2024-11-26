@@ -25,7 +25,7 @@ fn format_params(params: &GenerationParams) -> String {
     )
 }
 
-#[poise::command(prefix_command, slash_command, subcommands("set", "reset", "show"))]
+#[poise::command(prefix_command, slash_command, subcommand_required, subcommands("set", "reset", "show"))]
 pub async fn params(_ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
