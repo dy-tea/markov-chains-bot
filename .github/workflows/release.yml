@@ -40,26 +40,18 @@ jobs:
 
       - name: Rename files
         run: |
-            cp ./target/aarch64-unknown-linux-gnu/release/markov-chains-bot markov-chains-bot-aarch64
-            cp ./target/x86_64-unknown-linux-gnu/release/markov-chains-bot markov-chains-bot-x86_84
+            ls target
+            cp target/aarch64-unknown-linux-gnu/release/markov-chains-bot markov-chains-bot-aarch64
+            cp target/release/markov-chains-bot markov-chains-bot-x86_84
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: ${{ github.ref }}
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Release Assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref }}
+          name: ${{ github.ref }}
+          draft: false
+          prerelease: false
           files: |
             markov-chains-bot-aarch64
             markov-chains-bot-x86_84
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

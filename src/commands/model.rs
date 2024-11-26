@@ -1,13 +1,13 @@
-use std::fs::read_dir;
-
 use crate::{
     global::*,
     utils::pretty_bytes
 };
 
+use poise::serenity_prelude as serenity;
 use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
 use bytes::Bytes;
+use std::fs::read_dir;
 
 use markov_chains::{
     prelude::*,
@@ -57,65 +57,112 @@ pub async fn model(_: Context<'_>) -> Result<(), Error> {
 /// Build language model
 #[poise::command(prefix_command, slash_command)]
 pub async fn build(ctx: Context<'_>,
-    #[description = "Link to dataset bundle"] url: String,
+    #[description = "Dataset bundle file"] file: Option<serenity::Attachment>,
+    #[description = "Link to dataset bundle"] url: Option<String>,
     #[description = "Build bigrams transitions table"] bigrams: bool,
     #[description = "Build trigrams transitions table"] trigrams: bool,
     #[description = "Model name (overwrites file name if provided)"] model_name: Option<String>,
     #[description = "Model description"] description: Option<String>,
 ) -> Result<(), Error> {
-    let status = ctx.say(format!("Attempting to download url {}", url)).await?;
+    // Download dataset from url
+    if let Some(url) = url {
+        let status = ctx.say(format!("Attempting to download url {}", url)).await?;
 
-    match download(url).await {
-        Ok((name, content)) => {
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Downloaded model to `{}`", name)),
-                ..Default::default()
-            }).await?;
+        match download(url).await {
+            Ok((name, content)) => {
+                status.edit(ctx, poise::CreateReply {
+                    content: Some(format!("Downloaded model to `{}`", name)),
+                    ..Default::default()
+                }).await?;
 
-            // Load dataset from content
-            let dataset = postcard::from_bytes::<Dataset>(&content)?;
+                // Load dataset from content
+                let dataset = postcard::from_bytes::<Dataset>(&content)?;
 
-            // Get optional model name
-            let model_name = if let Some(mn) = model_name {
-                mn.split('.').next().unwrap_or(&mn).to_owned()
-            } else {
-                name.split('.').next().unwrap_or(&name).to_owned()
-            };
+                // Get optional model name
+                let model_name = if let Some(mn) = model_name {
+                    mn.split('.').next().unwrap_or(&mn).to_owned()
+                } else {
+                    name.split('.').next().unwrap_or(&name).to_owned()
+                };
 
-            // Create model from dataset
-            let mut model = Model::build(dataset, bigrams, trigrams)
-                .with_header("name", model_name.clone())
-                .with_header("version", MARKOV_CHAINS_VERSION);
+                // Create model from dataset
+                let mut model = Model::build(dataset, bigrams, trigrams)
+                    .with_header("name", model_name.clone())
+                    .with_header("version", MARKOV_CHAINS_VERSION);
 
-            // Add optional description
-            if let Some(description) = description {
-                model = model.with_header("description", description);
+                // Add optional description
+                if let Some(description) = description {
+                    model = model.with_header("description", description);
+                }
+
+                // Write model to file
+                std::fs::write(format!("{}/{}.model", MODEL_DIR, model_name), postcard::to_allocvec(&model)?)?;
+
+                // Update user
+                status.edit(ctx, poise::CreateReply {
+                    content: Some(format!("Model `{}` built successfully", model_name)),
+                    ..Default::default()
+                }).await?;
+
+                return Ok(());
             }
-
-            // Write model to file
-            std::fs::write(format!("{}/{}.model", MODEL_DIR, model_name), postcard::to_allocvec(&model)?)?;
-
-            // Update user
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Model `{}` built successfully", model_name)),
-                ..Default::default()
-            }).await?;
-        }
-        Err(e) => {
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("**ERROR: Failed to download model**\n**ERROR: **`{}`", e.to_string())),
-                ..Default::default()
-            }).await?;
+            Err(e) => {
+                status.edit(ctx, poise::CreateReply {
+                    content: Some(format!("**ERROR: Failed to download model**\n**ERROR: **`{}`", e.to_string())),
+                    ..Default::default()
+                }).await?;
+            }
         }
     }
 
-    Ok(())
+    // TODO: deduplicate code
+    if let Some(file) = file {
+        let status = ctx.say(format!("Downloading attachment {}", file.filename)).await?;
+
+        let content = file.download().await?;
+        let name = file.filename;
+
+        // Load dataset from content
+        let dataset = postcard::from_bytes::<Dataset>(&content)?;
+
+        // Get optional model name
+        let model_name = if let Some(mn) = model_name {
+            mn.split('.').next().unwrap_or(&mn).to_owned()
+        } else {
+            name.split('.').next().unwrap_or(&name).to_owned()
+        };
+
+        // Create model from dataset
+        let mut model = Model::build(dataset, bigrams, trigrams)
+            .with_header("name", model_name.clone())
+            .with_header("version", MARKOV_CHAINS_VERSION);
+
+        // Add optional description
+        if let Some(description) = description {
+            model = model.with_header("description", description);
+        }
+
+        // Write model to file
+        std::fs::write(format!("{}/{}.model", MODEL_DIR, model_name), postcard::to_allocvec(&model)?)?;
+
+        // Update user
+        status.edit(ctx, poise::CreateReply {
+            content: Some(format!("Model `{}` built successfully", model_name)),
+            ..Default::default()
+        }).await?;
+
+        return Ok(());
+    }
+
+    Err("**ERROR: No file or url provided**".into())
 }
 
 /// Build language model from plain messages files
 #[poise::command(prefix_command, slash_command)]
 pub async fn fromscratch(
     ctx: Context<'_>,
+    // TODO: add support for attachment
+    //#[description = "Plain messages file attachment"] file: Option<serenity::Attachment>,
     #[description = "Link to the plain messages file"] url: String,
     #[description = "Build bigrams transitions table"] bigrams: bool,
     #[description = "Build trigrams transitions table"] trigrams: bool,
@@ -186,6 +233,7 @@ pub async fn fromscratch(
 pub async fn load(
     ctx: Context<'_>,
     #[description = "Name of model to load (e.g. kleden4)"] name: Option<String>,
+    #[description = "Model file"] file: Option<serenity::Attachment>,
     #[description = "Link to the model"] url: Option<String>,
 ) -> Result<(), Error> {
     let status = ctx.say("Attempting to load model").await?;
@@ -232,6 +280,36 @@ pub async fn load(
                 }).await?;
             }
         }
+    }
+
+    // If file is passed, load the model from that file
+    if let Some(file) = file {
+        // Get filename
+        let name = name.unwrap_or(file.filename.clone());
+
+        // Create response
+        let status = ctx.say(format!("Downloading model from attachment {}", name.clone())).await?;
+
+        // Download content
+        let content = file.download().await?;
+
+        // Load dataset from content
+        let model = postcard::from_bytes::<Model>(&content)?;
+
+        // Get model name from headers, use file name as fallback
+        let name = match model.headers().get("name") {
+            Some(mn) => mn.split('.').next().unwrap_or(&mn).to_string(),
+            None => name.split('.').next().unwrap_or(&name).to_string(),
+        };
+
+        // Write model to file
+        std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
+
+        // Update user
+        status.edit(ctx, poise::CreateReply {
+            content: Some(format!("Model `{}` built successfully", name)),
+            ..Default::default()
+        }).await?;
     }
 
     // Now either name or url should have set model_name
