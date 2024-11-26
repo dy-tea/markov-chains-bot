@@ -41,6 +41,8 @@ pub async fn download(url: String) -> Result<(String, Bytes), Error> {
                     format!("{}", now.format("%Y-%m-%d-%H-%M-%S"))
                 });
 
+            println!("NOTE: Downloaded file \"{}\" from url \"{}\"", name, url);
+
             // Return the content
             let content = response.bytes().await.unwrap();
             Ok((name, content))
@@ -100,6 +102,8 @@ pub async fn build(ctx: Context<'_>,
                 content: Some(format!("Model `{}` built successfully", model_name)),
                 ..Default::default()
             }).await?;
+
+            println!("NOTE: Build model \"{}\", saved to \"{}/{}.model\"", model_name, MODEL_DIR, model_name);
         }
         Err(e) => {
             status.edit(ctx, poise::CreateReply {
@@ -176,6 +180,8 @@ pub async fn fromscratch(
             content: Some(format!("Successfully build model `{}`", name)),
             ..Default::default()
         }).await?;
+
+        println!("NOTE: Build model \"{}\" from scratch, saved to \"{}/{}.model\"", name, MODEL_DIR, name);
     }
 
     Ok(())
@@ -223,7 +229,9 @@ pub async fn load(
                 }).await?;
 
                 // Update model name
-                model_name = Some(name);
+                model_name = Some(name.clone());
+
+                println!("NOTE: Got model \"{}\" from url, saved to \"{}/{}.model\"", name, MODEL_DIR, name);
             }
             Err(e) => {
                 status.edit(ctx, poise::CreateReply {
@@ -268,6 +276,8 @@ pub async fn load(
             content: Some(format!("Successfully loaded model `{}` ", name)),
             ..Default::default()
         }).await?;
+
+        println!("NOTE: Loaded model \"{}\"", name);
 
         return Ok(());
     }
@@ -319,6 +329,8 @@ pub async fn list(
             }).await?;
         }
     }
+
+    println!("NOTE: Listed models successfully");
 
     Ok(())
 }
@@ -402,6 +414,8 @@ pub async fn info(
         variety.1,
         variety.2
     )).await?;
+
+    println!("NOTE: Displayed model info successfully");
 
     Ok(())
 }

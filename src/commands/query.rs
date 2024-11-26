@@ -77,5 +77,7 @@ pub async fn query(
         ..Default::default()
     }).await?;
 
+    println!("NOTE: Completed query successfully");
+
     Ok(())
 }
