@@ -21,9 +21,11 @@ async fn main() {
     // Load default model
     let default_model = postcard::from_bytes::<Model>(
         &std::fs::read(format!("{}/{}.model", MODEL_DIR, DEFAULT_MODEL_NAME))
-            .expect("Failed to read model file"),
+            .expect("ERROR: Failed to read model file"),
     )
-    .expect("Failed to deserialize model");
+    .expect("ERROR: Failed to deserialize model");
+
+    println!("NOTE: Default model \"{}\" loaded from \"{}/{}\"", DEFAULT_MODEL_NAME, MODEL_DIR, DEFAULT_MODEL_NAME);
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
@@ -46,4 +48,6 @@ async fn main() {
         .framework(framework)
         .await;
     client.unwrap().start().await.unwrap();
+
+    println!("NOTE: Bot Started!");
 }

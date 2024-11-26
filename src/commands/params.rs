@@ -58,7 +58,10 @@ pub async fn set(
         no_trigrams: no_trigrams.unwrap_or(params.no_trigrams),
     };
 
-    ctx.say(format!("## Params have been updated\n{}", format_params(&params.clone()))).await?;
+    let formatted_params = format_params(&params);
+
+    println!("NOTE: Updated params:\n{}", formatted_params);
+    ctx.say(format!("## Params have been updated\n{}", formatted_params)).await?;
 
     Ok(())
 }
@@ -78,6 +81,7 @@ pub async fn reset(ctx: Context<'_>) -> Result<(), Error>  {
     let mut params = ctx.data().params.lock().await;
     *params = GenerationParams::default();
 
+    println!("NOTE: Reset params");
     ctx.say("**Params have been reset**").await?;
 
     Ok(())

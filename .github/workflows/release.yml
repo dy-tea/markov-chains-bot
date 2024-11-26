@@ -1,0 +1,65 @@
+name: Create Release
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+
+      - name: Install cross dependencies
+        run: sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross docker
+
+      - name: Start docker
+        run: sudo systemctl start docker
+
+      - name: Install cross
+        run: cargo install cross --git https://github.com/cross-rs/cross.git
+
+      - name: Install cross target
+        run: rustup target add aarch64-unknown-linux-gnu
+
+      - name: Build aarch64-unknown-linux-gnu
+        run: cross build --release --target aarch64-unknown-linux-gnu
+
+      - name: Build x86_64-unknown-linux-gnu
+        run: cargo build --release
+
+      - name: Rename files
+        run: |
+            cp ./target/aarch64-unknown-linux-gnu/release/markov-chains-bot markov-chains-bot-aarch64
+            cp ./target/x86_64-unknown-linux-gnu/release/markov-chains-bot markov-chains-bot-x86_84
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: ${{ github.ref }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref }}
+          files: |
+            markov-chains-bot-aarch64
+            markov-chains-bot-x86_84
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
