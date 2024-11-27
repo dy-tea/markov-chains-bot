@@ -22,12 +22,12 @@ pub fn pretty_seconds(seconds: u64) -> String {
     const DAY: u64 = HOUR * 24;
 
     if seconds >= DAY {
-        format!("{:.2} D", seconds as f64 / DAY as f64)
+        format!("{:.2} Days", seconds as f64 / DAY as f64)
     } else if seconds >= HOUR {
-        format!("{:.2} H", seconds as f64 / HOUR as f64)
+        format!("{:.2} Hours", seconds as f64 / HOUR as f64)
     } else if seconds >= MINUTE {
-        format!("{:.2} M", seconds as f64 / MINUTE as f64)
+        format!("{:.2} Minutes", seconds as f64 / MINUTE as f64)
     } else {
-        format!("{} S", seconds)
+        format!("{} Seconds", seconds)
     }
 }
