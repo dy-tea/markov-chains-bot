@@ -96,7 +96,9 @@ pub async fn build(ctx: Context<'_>,
     };
 
     // Load dataset from content
-    let dataset = postcard::from_bytes::<Dataset>(&content)?;
+    let Ok(dataset) = postcard::from_bytes::<Dataset>(&content) else {
+        return Err("**ERROR: Invalid dataset".into());
+    };
 
     // Get optional model name
     let model_name = if let Some(mn) = model_name {
@@ -149,7 +151,9 @@ pub async fn fromscratch(
                 ..Default::default()
             }).await?;
 
-            let (name, content) = download(url.clone()).await.unwrap();
+            let Ok((name, content)) = download(url.clone()).await else {
+                return Err("**ERROR: Failed to download url**".into());
+            };
 
             status.edit(ctx, poise::CreateReply {
                 content: Some(format!("Successfully downloaded file {}", url)),
@@ -165,7 +169,9 @@ pub async fn fromscratch(
             }).await?;
 
             let name = file.filename.clone();
-            let content = file.download().await?;
+            let Ok(content) = file.download().await else {
+                return Err("**ERROR: Failed to download attachment**".into());
+            };
 
             status.edit(ctx, poise::CreateReply {
                 content: Some(format!("Successfully downloaded attachment {}", file.url)),
@@ -173,8 +179,7 @@ pub async fn fromscratch(
             }).await?;
 
             (name, content)
-        }
-        else {
+        } else {
             return Err("**ERROR: No attachment or url provided**".into())
         }
     };
@@ -246,19 +251,30 @@ pub async fn load(
     let name = {
         if let Some(name) = name {
             // Name is passed assuming it is the model
+
             name.trim().to_string()
         } else if let Some(url) = url {
             // Download url and save it as a new model
+
             status.edit(ctx, poise::CreateReply {
                 content: Some(format!("Attempting to download model from {}", url)),
                 ..Default::default()
             }).await?;
 
-            let Ok((name, content)) = download(url).await else {
-                return Err("Failed to download model".into());
+            // Download model from url
+            let Ok((name, content)) = download(url.clone()).await else {
+                return Err("**ERROR: Failed to download model from url**".into());
             };
 
-            let model = postcard::from_bytes::<Model>(&content)?;
+            status.edit(ctx, poise::CreateReply {
+                content: Some(format!("Model downloaded from {} successfully, loding model", url)),
+                ..Default::default()
+            }).await?;
+
+            // Parse model from bytes
+            let Ok(model) = postcard::from_bytes::<Model>(&content) else {
+                return Err("**ERROR: Failed to parse model from bytes**".into());
+            };
 
             // Get model name from headers, use file name as fallback
             let name = match model.headers().get("name") {
@@ -269,9 +285,8 @@ pub async fn load(
             // Write model to file
             std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
 
-            // Update user
             status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Model `{}` built successfully", name)),
+                content: Some(format!("Model `{}` loaded successfully", name)),
                 ..Default::default()
             }).await?;
 
@@ -282,14 +297,20 @@ pub async fn load(
             // Get filename
             let name = name.unwrap_or(file.filename.clone());
 
-            // Create response
             status.edit(ctx, poise::CreateReply {
                 content: Some(format!("Downloading model from attachment {}", file.url)),
                 ..Default::default()
             }).await?;
 
             // Download content
-            let content = file.download().await?;
+            let Ok(content) = file.download().await else {
+                return Err("**ERROR: Failed to download attachment".into());
+            };
+
+            status.edit(ctx, poise::CreateReply {
+                content: Some(format!("Attachment {} downloaded, loading model", file.url)),
+                ..Default::default()
+            }).await?;
 
             // Load dataset from content
             let model = postcard::from_bytes::<Model>(&content)?;
@@ -305,7 +326,7 @@ pub async fn load(
 
             // Update user
             status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Model `{}` built successfully", name)),
+                content: Some(format!("Model `{}` saved successfully", name)),
                 ..Default::default()
             }).await?;
 
