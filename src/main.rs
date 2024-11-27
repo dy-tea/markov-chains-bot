@@ -29,7 +29,7 @@ async fn main() {
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![/*messages(), tokens(), dataset(),*/ model(), params(), query()],
+            commands: vec![/*messages(), tokens(), dataset(),*/ model(), params(), query(), sysinfo()],
             ..Default::default()
         })
         .setup(|ctx, _ready, framework| {

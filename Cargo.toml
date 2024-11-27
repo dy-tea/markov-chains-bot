@@ -15,9 +15,6 @@ opt-level = 3
 lto = true
 strip = true
 
-[dependencies.poise]
-version = "0.6.1"
-
 [dependencies.markov-chains]
 version = "1.4.4"
 git = "https://github.com/krypt0nn/markov-chains"
@@ -39,5 +36,7 @@ version = "0.10"
 features = ["vendored"]
 
 [dependencies]
+poise = "0.6.1"
 chrono = "0.4"
 bytes = "1.0"
+sysinfo = "0.32.1"
