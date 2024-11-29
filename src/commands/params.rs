@@ -1,6 +1,9 @@
 use markov_chains::prelude::GenerationParams;
 
-pub use crate::global::*;
+use crate::{
+    global::*,
+    db::*
+};
 
 fn format_params(params: &GenerationParams) -> String {
     format!("**Params:**
@@ -44,9 +47,11 @@ pub async fn set(
     #[description = "Do not use bigrams for text generation"] no_bigrams: Option<bool>,
     #[description = "Do not use trigrams for text generation"] no_trigrams: Option<bool>,
 ) -> Result<(), Error> {
-    let mut params = ctx.data().params.lock().await;
+    let author_id = ctx.author().id.get();
 
-    *params = GenerationParams {
+    let params = user_get_params(author_id).unwrap();
+
+    user_set_params(author_id, GenerationParams {
         temperature: temperature.unwrap_or(params.temperature),
         temperature_alpha: temperature_alpha.unwrap_or(params.temperature_alpha),
         repeat_penalty: repeat_penalty.unwrap_or(params.repeat_penalty),
@@ -56,7 +61,7 @@ pub async fn set(
         max_len: max_len.unwrap_or(params.max_len),
         no_bigrams: no_bigrams.unwrap_or(params.no_bigrams),
         no_trigrams: no_trigrams.unwrap_or(params.no_trigrams),
-    };
+    });
 
     let formatted_params = format_params(&params);
     ctx.say(format!("## Params have been updated\n{}", formatted_params)).await?;
@@ -67,9 +72,9 @@ pub async fn set(
 /// Show current model parameters
 #[poise::command(prefix_command, slash_command)]
 pub async fn show(ctx: Context<'_>) -> Result<(), Error>  {
-    let params = ctx.data().params.lock().await;
+    let params = user_get_params(ctx.author().id.get()).unwrap();
 
-    ctx.say(format_params(&params.clone())).await?;
+    ctx.say(format_params(&params)).await?;
 
     Ok(())
 }
@@ -77,8 +82,7 @@ pub async fn show(ctx: Context<'_>) -> Result<(), Error>  {
 /// Reset model parameters to default values
 #[poise::command(prefix_command, slash_command)]
 pub async fn reset(ctx: Context<'_>) -> Result<(), Error>  {
-    let mut params = ctx.data().params.lock().await;
-    *params = GenerationParams::default();
+    user_set_params(ctx.author().id.get(), GenerationParams::default());
 
     ctx.say("**Params have been reset**").await?;
 

@@ -1,4 +1,9 @@
-pub use crate::global::*;
+use crate::{
+    global::*,
+    db::*
+};
+
+use markov_chains::prelude::*;
 
 /// Send a query to the currently loaded model
 #[poise::command(prefix_command, slash_command, broadcast_typing)]
@@ -6,11 +11,28 @@ pub async fn query(
     ctx: Context<'_>,
     #[description = "Starting query to run the current model off"] query: String,
 ) -> Result<(), Error> {
-    // Get the currently loaded model
-    let model = ctx.data().model.lock().await;
+    // Get the current user id
+    let user_id = ctx.author().id.to_string();
 
-    // Get the current parameters
-    let params = ctx.data().params.lock().await;
+    // Get loaded model id
+    let loaded_model = user_get_loaded(user_id.parse().unwrap()).unwrap();
+
+    // Get the path to the model
+    let model_path = format!("{}/{}", MODEL_DIR, loaded_model);
+
+    // Load the model
+    let model = match std::fs::read(model_path) {
+        Ok(model) => {
+            match postcard::from_bytes::<Model>(&model) {
+                Ok(model) => model,
+                Err(e) => return Err(format!("**ERROR:** `{}`", e).into())
+            }
+        }
+        Err(e) => return Err(format!("**ERROR:** `{}`", e).into())
+    };
+
+    // Get user params
+    let params = user_get_params(user_id.parse().unwrap()).unwrap();
 
     // Generate the current query
     let message_start = query.clone();

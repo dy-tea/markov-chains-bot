@@ -1,12 +1,10 @@
 use poise::serenity_prelude as serenity;
 
-use std::sync::Arc;
-use tokio::sync::Mutex;
-
-use markov_chains::prelude::*;
-
 pub mod global;
-pub use global::*;
+use global::*;
+
+pub mod db;
+use db::create_db;
 
 pub mod commands;
 pub use commands::*;
@@ -15,18 +13,13 @@ pub mod utils;
 
 #[tokio::main]
 async fn main() {
+    // Get discord token
     let token = std::env::var("DISCORD_TOKEN").expect("missing DISCORD_TOKEN");
-    let intents = serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT | serenity::GatewayIntents::GUILD_EMOJIS_AND_STICKERS;
 
-    // Load default model
-    let default_model = postcard::from_bytes::<Model>(
-        &std::fs::read(format!("{}/{}.model", MODEL_DIR, DEFAULT_MODEL_NAME))
-            .expect("ERROR: Failed to read model file"),
-    )
-    .expect("ERROR: Failed to deserialize model");
+    // Create db if not exists
+    create_db().expect("ERROR: Failed to create db");
 
-    println!("NOTE: Default model \"{}\" loaded from \"{}/{}\"", DEFAULT_MODEL_NAME, MODEL_DIR, DEFAULT_MODEL_NAME);
-
+    // Create serenity framework
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
             commands: vec![/*messages(), tokens(), dataset(),*/ model(), params(), query(), sysinfo()],
@@ -35,15 +28,13 @@ async fn main() {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {
-                    model: Arc::new(Mutex::new(default_model)),
-                    params: Arc::new(Mutex::new(GenerationParams::default())),
-                    model_name: Arc::new(Mutex::new(DEFAULT_MODEL_NAME.to_string())),
-                })
+                Ok(Data {})
             })
         })
         .build();
 
+    // Load serenity client
+    let intents = serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT | serenity::GatewayIntents::GUILD_EMOJIS_AND_STICKERS;
     let client = serenity::ClientBuilder::new(token, intents)
         .framework(framework)
         .await;

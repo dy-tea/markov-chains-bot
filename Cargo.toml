@@ -25,7 +25,7 @@ features = ["cache"]
 
 [dependencies.tokio]
 version = "^1.4"
-features = ["macros", "signal", "rt-multi-thread"]
+features = ["full"]
 
 [dependencies.postcard]
 version = "1.0"
@@ -39,7 +39,12 @@ features = ["native-tls-vendored"]
 version = "0.10"
 features = ["vendored"]
 
+[dependencies.rusqlite]
+version = "0.32.0"
+features = ["bundled"]
+
 [dependencies]
 chrono = "0.4"
 bytes = "1.0"
 sysinfo = "0.32.1"
+xxh3 = "0.1.1"

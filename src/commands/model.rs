@@ -1,5 +1,6 @@
 use crate::{
     global::*,
+    db::*,
     utils::pretty_bytes
 };
 
@@ -49,11 +50,12 @@ pub async fn download(url: String) -> Result<(String, Bytes), Error> {
     }
 }
 
-#[poise::command(prefix_command, slash_command, subcommand_required, subcommands("build", "fromscratch", "load", "list", "info"))]
+#[poise::command(prefix_command, slash_command, subcommand_required, subcommands(/*"build", "fromscratch",*/ "load", "list", "info"))]
 pub async fn model(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+/*
 /// Build language model
 #[poise::command(prefix_command, slash_command)]
 pub async fn build(ctx: Context<'_>,
@@ -127,8 +129,9 @@ pub async fn build(ctx: Context<'_>,
     }).await?;
 
     Ok(())
-}
+}*/
 
+/*
 /// Build language model from plain messages files
 #[poise::command(prefix_command, slash_command)]
 pub async fn fromscratch(
@@ -235,7 +238,7 @@ pub async fn fromscratch(
     }).await?;
 
     Ok(())
-}
+}*/
 
 /// Load language model
 #[poise::command(prefix_command, slash_command)]
@@ -247,118 +250,47 @@ pub async fn load(
 ) -> Result<(), Error> {
     let status = ctx.say("Attempting to load model").await?;
 
-    // Get name and content of model
-    let name = {
+    let (id, name) = {
         if let Some(name) = name {
-            // Name is passed assuming it is the model
-
-            name.trim().to_string()
-        } else if let Some(url) = url {
-            // Download url and save it as a new model
-
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Attempting to download model from {}", url)),
-                ..Default::default()
-            }).await?;
-
-            // Download model from url
-            let Ok((name, content)) = download(url.clone()).await else {
-                return Err("**ERROR: Failed to download model from url**".into());
-            };
-
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Model downloaded from {} successfully, loding model", url)),
-                ..Default::default()
-            }).await?;
-
-            // Parse model from bytes
-            let Ok(model) = postcard::from_bytes::<Model>(&content) else {
-                return Err("**ERROR: Failed to parse model from bytes**".into());
-            };
-
-            // Get model name from headers, use file name as fallback
-            let name = match model.headers().get("name") {
-                Some(mn) => mn.split('.').next().unwrap_or(&mn).to_string(),
-                None => name.split('.').next().unwrap_or(&name).to_string(),
-            };
-
-            // Write model to file
-            std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
-
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Model `{}` loaded successfully", name)),
-                ..Default::default()
-            }).await?;
-
-            name
+            (model_get_id(name.clone())?, name)
         } else if let Some(file) = file {
-            // Download attachment and save it as a new model
-
-            // Get filename
-            let name = name.unwrap_or(file.filename.clone());
-
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Downloading model from attachment {}", file.url)),
-                ..Default::default()
-            }).await?;
-
-            // Download content
             let Ok(content) = file.download().await else {
-                return Err("**ERROR: Failed to download attachment".into());
+                return Err("**ERROR: Failed to download attachment**".into());
             };
 
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Attachment {} downloaded, loading model", file.url)),
-                ..Default::default()
-            }).await?;
-
-            // Load dataset from content
             let model = postcard::from_bytes::<Model>(&content)?;
+            let name = model.headers().get("name").unwrap_or(&file.filename);
 
-            // Get model name from headers, use file name as fallback
-            let name = match model.headers().get("name") {
-                Some(mn) => mn.split('.').next().unwrap_or(&mn).to_string(),
-                None => name.split('.').next().unwrap_or(&name).to_string(),
+            let id = model_get_id(name.clone())?;
+            std::fs::write(format!("{}/{}", MODEL_DIR, id), content)?;
+
+            add_model(id, name.clone()).unwrap();
+
+            (id, name.to_string())
+        } else if let Some(url) = url {
+            let Ok((name, content)) = download(url.clone()).await else {
+                return Err("**ERROR: Failed to download url**".into());
             };
 
-            // Write model to file
-            std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
+            let model = postcard::from_bytes::<Model>(&content)?;
+            let name = model.headers().get("name").unwrap_or(&name);
 
-            // Update user
-            status.edit(ctx, poise::CreateReply {
-                content: Some(format!("Model `{}` saved successfully", name)),
-                ..Default::default()
-            }).await?;
+            let id = model_get_id(name.to_string())?;
+            std::fs::write(format!("{}/{}.model", MODEL_DIR, id), content)?;
 
-            name
+            add_model(id, name.clone()).unwrap();
+
+            (id, name.to_string())
         } else {
-            return Err("**ERROR: You must provide one of name, file or url**".into());
+            return Err("**ERROR: No model name, attachment or url provided**".into());
         }
     };
 
-    // Load model from file
-    let model_data = match std::fs::read(format!("{}/{}.model", MODEL_DIR, name)) {
-        Ok(model) => match postcard::from_bytes::<Model>(&model) {
-            Ok(model) => model,
-            Err(err) => {
-                return Err(format!("**ERROR: Failed to load model** `{}`\n**ERROR:** `{}`", name, err).into());
-            }
-        }
-        Err(err) => {
-            return Err(format!("**ERROR: Failed to load model** `{}`\n**ERROR:** `{}`", name, err).into());
-        }
-    };
-
-    // Update current model
-    let mut model = ctx.data().model.lock().await;
-    *model = model_data;
-
-    // Update current model name
-    let mut model_name = ctx.data().model_name.lock().await;
-    *model_name = name.clone();
+    // Set the model as loaded
+    user_set_loaded(ctx.author().id.get(), id).unwrap();
 
     status.edit(ctx, poise::CreateReply {
-        content: Some(format!("Model `{}` loaded successfully", model_name)),
+        content: Some(format!("Model `{}` loaded successfully", name)),
         ..Default::default()
     }).await?;
 
@@ -379,8 +311,8 @@ pub async fn list(
 
             for entry in entries {
                 if let Ok(entry) = entry {
-                    if let Ok(name) = entry.file_name().into_string() {
-                        if name.ends_with(".model") {
+                    if let Ok(id) = entry.file_name().into_string() {
+                        if let Ok(name) = model_get_name(id.parse().unwrap()) {
                             if let Ok(metadata) = entry.metadata() {
                                 let line = format!(
                                     "**Name:**\t`{}`\t**Size:**\t`{}`",
@@ -419,10 +351,11 @@ pub async fn list(
 pub async fn info(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
-    let model = ctx.data().model.lock().await;
-    let headers = model.headers().clone();
+    let loaded = user_get_loaded(ctx.author().id.get()).unwrap();
 
-    let formatted_headers = headers.iter()
+    let model = postcard::from_bytes::<Model>(&std::fs::read(format!("{}/{}", MODEL_DIR, loaded))?)?;
+
+    let formatted_headers = model.headers().iter()
         .map(|(key, value)| format!("- **{}:**\t`{}`", key, value))
         .collect::<Vec<String>>()
         .join("\n");
