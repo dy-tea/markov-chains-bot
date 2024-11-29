@@ -1,6 +1,6 @@
 [package]
 name = "markov-chains-bot"
-version = "1.7.3"
+version = "1.7.4"
 description = "Markov chains discord bot"
 authors = ["Dylan Donnell <dylan.donnell@student.griffith.ie>"]
 repository = "https://github.com/dy-tea/markov-chains-bot"
@@ -19,6 +19,10 @@ strip = true
 version = "1.4.4"
 git = "https://github.com/krypt0nn/markov-chains"
 
+[dependencies.poise]
+version = "0.6.1"
+features = ["cache"]
+
 [dependencies.tokio]
 version = "^1.4"
 features = ["macros", "signal", "rt-multi-thread"]
@@ -36,7 +40,6 @@ version = "0.10"
 features = ["vendored"]
 
 [dependencies]
-poise = "0.6.1"
 chrono = "0.4"
 bytes = "1.0"
 sysinfo = "0.32.1"

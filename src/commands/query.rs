@@ -9,41 +9,33 @@ pub async fn query(
     // Get the currently loaded model
     let model = ctx.data().model.lock().await;
 
-    // Get the model name
-    let model_name = ctx.data().model_name.lock().await;
-
     // Get the current parameters
     let params = ctx.data().params.lock().await;
-
-    // Display the current query
-    let query_message = format!("## Created Query\n- **Model:**\t`{}`\n- **Query:**\t `{}`\n- **Status:**\t",  model_name, query);
-    let query_reply = ctx.say(format!("{}`Querying...`", query_message)).await?;
 
     // Generate the current query
     let message_start = query.clone();
     let query = query.split_whitespace()
         .filter(|word| !word.is_empty())
         .map(|word| word.to_lowercase())
-        .map(|word| model.tokens().find_token(word))
+        .map(|word| {
+            if word.starts_with("<:") && word.ends_with('>') {
+                if let Some(end) = word.rfind(":") {
+                    word[1..=end].to_string()
+                } else {
+                    word
+                }
+            } else {
+                word
+            }
+        })
+        .map(|word| model.tokens().find_token(&word))
         .collect::<Option<Vec<_>>>();
 
     let Some(query) = query else {
-        // Failed to find query in dataset
-        query_reply.edit(ctx, poise::CreateReply {
-            content: Some(format!("{}`Failed`", query_message)),
-            ..Default::default()
-        }).await?;
-
         return Err("**ERROR: Query not in dataset**".into());
     };
 
     if query.is_empty() {
-        // Query cannot be empty
-        query_reply.edit(ctx, poise::CreateReply {
-            content: Some(format!("{}`Failed`", query_message)),
-            ..Default::default()
-        }).await?;
-
         return Err("**ERROR: Query cannot be empty**".into());
     }
 
@@ -57,7 +49,33 @@ pub async fn query(
                 };
 
                 message.push_str(" ");
-                message.push_str(word);
+
+                // Check if the word is an emoji
+                if word.starts_with(':') && word.ends_with(':') {
+                    // Try to find emoji in current server
+                    match ctx.partial_guild().await {
+                        Some(guild) => {
+                            match guild.emojis(ctx.http()).await {
+                                Ok(emojis) => {
+                                    for emoji in emojis {
+                                        if emoji.name == &word[1..word.len() - 1] {
+                                            message.push_str(&format!("<:{}:{}>", emoji.name, emoji.id));
+                                            break;
+                                        }
+                                    }
+                                },
+                                Err(e) =>
+                                    return Err(format!("**ERROR:** `{}`", e).into()),
+                            }
+                        },
+                        None => {
+                            // Bot isn't being run from a server, return the emoji as is
+                            message.push_str(word);
+                        },
+                    }
+                } else {
+                    message.push_str(word);
+                }
             }
             Err(err) => {
                 return Err(format!("**ERROR: Failed to generate** `{}`", err).into());
@@ -68,12 +86,6 @@ pub async fn query(
     // Display the generated message
     generated.edit(ctx, poise::CreateReply {
         content: Some(message.clone()),
-        ..Default::default()
-    }).await?;
-
-    // Edit message to show it's completed
-    query_reply.edit(ctx, poise::CreateReply {
-        content: Some(format!("{}`Completed`", query_message)),
         ..Default::default()
     }).await?;
 
