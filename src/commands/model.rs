@@ -8,6 +8,7 @@ use poise::serenity_prelude as serenity;
 use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
 use bytes::Bytes;
+use rusqlite::ToSql;
 use std::fs::read_dir;
 use xxh3::hash64_with_seed;
 use markov_chains::{
@@ -266,6 +267,7 @@ pub async fn load(
     #[description = "Name of model to load (e.g. kleden4)"] name: Option<String>,
     #[description = "Model file"] file: Option<serenity::Attachment>,
     #[description = "Link to the model"] url: Option<String>,
+    #[description = "Index of model to load (if models share names)"] index: Option<usize>,
 ) -> Result<(), Error> {
     let status = ctx.say("Attempting to load model").await?;
 
@@ -282,12 +284,45 @@ pub async fn load(
             }
 
             if model_ids.len() > 1 {
-                return Err("**ERROR: Multiple models found**".into());
+                if let Some(index) = index {
+                    if index >= model_ids.len() {
+                        return Err("**ERROR: Index out of bounds**".into());
+                    }
+
+                    let id = model_ids[index].parse::<u64>().unwrap();
+                    (id, name)
+                } else {
+                    let model_list = model_ids.iter()
+                        .enumerate()
+                        .map(|(i, id)| {
+                            if let Ok(timestamp) = model_get_timestamp(id.to_string()) {
+                                format!(
+                                    "- **Index:**\t`{}`\t**Creation Date:**\t`{}`",
+                                    i,
+                                    timestamp
+                                )
+                            } else {
+                                format!(
+                                    "- **Index:**\t`{}`\t**Creation Date:**\t`Unknown`",
+                                    i
+                                )
+                            }
+                        })
+                        .collect::<Vec<String>>()
+                        .join("\n");
+
+                    status.edit(ctx, poise::CreateReply {
+                        content: Some(format!("Multiple models found, please specify index\n{}", model_list)),
+                        ..Default::default()
+                    }).await?;
+
+                    return Ok(());
+                }
+            } else {
+                let id = model_ids[0].parse::<u64>().unwrap();
+
+                (id, name)
             }
-
-            let id = model_ids[0].parse::<u64>().unwrap();
-
-            (id, name)
         } else if let Some(file) = file {
             let Ok(content) = file.download().await else {
                 return Err("**ERROR: Failed to download attachment**".into());
