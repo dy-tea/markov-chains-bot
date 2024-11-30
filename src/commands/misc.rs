@@ -46,8 +46,8 @@ pub async fn sysinfo(ctx: Context<'_>) -> Result<(), Error> {
     );
 
     // Package info
-    let bot = format!("**markov-chains-bot:** `{}`", env!("CARGO_PKG_VERSION"));
-    let markov = format!("**markov-chains:** `{}`", MARKOV_CHAINS_VERSION);
+    let bot = format!("**markov-chains-bot:**\t`{}`", env!("CARGO_PKG_VERSION"));
+    let markov = format!("**markov-chains:**\t`{}`", MARKOV_CHAINS_VERSION);
 
     ctx.say(format!(
         "## System\n- {}\n- {}\n- {}\n- {}\n- {}\n- {}\n- {}\n- {}\n## Package\n- {}\n- {}",
