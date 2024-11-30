@@ -1,6 +1,6 @@
 [package]
 name = "markov-chains-bot"
-version = "1.8.1"
+version = "1.8.2"
 description = "Markov chains discord bot"
 authors = ["Dylan Donnell <dylan.donnell@student.griffith.ie>"]
 repository = "https://github.com/dy-tea/markov-chains-bot"

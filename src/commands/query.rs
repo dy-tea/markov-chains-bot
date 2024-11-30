@@ -15,7 +15,7 @@ pub async fn query(
     let user_id = ctx.author().id.to_string();
 
     // Get loaded model id
-    let loaded_model = user_get_loaded(user_id.parse().unwrap()).unwrap();
+    let loaded_model = user_get_loaded(user_id.parse().unwrap()).unwrap_or(DEFAULT_MODEL_ID.to_string());
 
     // Get the path to the model
     let model_path = format!("{}/{}", MODEL_DIR, loaded_model);
