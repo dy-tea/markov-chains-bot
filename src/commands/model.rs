@@ -51,7 +51,7 @@ pub async fn download(url: String) -> Result<(String, Bytes), Error> {
     }
 }
 
-#[poise::command(prefix_command, slash_command, subcommand_required, subcommands(/*"build", "fromscratch",*/ "load", "list", "info"))]
+#[poise::command(prefix_command, slash_command, subcommand_required, subcommands(/*"build", */"fromscratch", "load", "list", "info"))]
 pub async fn model(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
