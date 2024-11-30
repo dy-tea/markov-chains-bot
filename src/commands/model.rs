@@ -4,7 +4,7 @@ use crate::{
     utils::pretty_bytes
 };
 
-use poise::serenity_prelude as serenity;
+use poise::{serenity_prelude as serenity, ReplyHandle};
 use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
 use bytes::Bytes;
@@ -431,9 +431,9 @@ pub async fn list(
 pub async fn info(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
-    let Ok(loaded) = user_get_loaded(ctx.author().id.to_string()) else {
-        return Err("**ERROR: No model loaded**".into());
-    };
+    let status = ctx.say("Getting model info...").await?;
+
+    let loaded = user_get_loaded(ctx.author().id.to_string()).unwrap_or(DEFAULT_MODEL_ID.to_string());
 
     let model = postcard::from_bytes::<Model>(&std::fs::read(format!("{}/{}", MODEL_DIR, loaded))?)?;
 
@@ -485,26 +485,30 @@ pub async fn info(
         format!("{:.4}%", model.transitions().calc_unigram_variety() * 100.0)
     );
 
-    ctx.say(format!(
-        "## Headers
+    status.edit(ctx, poise::CreateReply {
+        content: Some(format!(
+"## Headers
 {}
 ## Model Info
 - **Total Tokens:**\t`{}`
 - **Chains:**\t`{}`\t/\t`{}`\t/\t`{}`
 - **Avg Paths:**\t`{}`\t/\t`{}`\t/\t`{}`
 - **Variety:**\t`{}`\t/\t`{}`\t/\t`{}`",
-        formatted_headers,
-        model.tokens().len(),
-        chains.0,
-        chains.1,
-        chains.2,
-        avg_paths.0,
-        avg_paths.1,
-        avg_paths.2,
-        variety.0,
-        variety.1,
-        variety.2
-    )).await?;
+                formatted_headers,
+                model.tokens().len(),
+                chains.0,
+                chains.1,
+                chains.2,
+                avg_paths.0,
+                avg_paths.1,
+                avg_paths.2,
+                variety.0,
+                variety.1,
+                variety.2
+            )),
+            ..Default::default()
+        }
+    ).await?;
 
     Ok(())
 }

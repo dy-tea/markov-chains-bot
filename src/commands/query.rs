@@ -11,6 +11,8 @@ pub async fn query(
     ctx: Context<'_>,
     #[description = "Starting query to run the current model off"] query: String,
 ) -> Result<(), Error> {
+    let generated = ctx.say("Generating...").await?;
+
     // Get the current user id
     let user_id = ctx.author().id.to_string();
 
@@ -61,7 +63,6 @@ pub async fn query(
         return Err("**ERROR: Query cannot be empty**".into());
     }
 
-    let generated = ctx.say("Generating...").await?;
     let mut message = message_start;
     for token in model.generate(query, &params) {
         match token {
