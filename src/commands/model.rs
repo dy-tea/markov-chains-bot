@@ -132,7 +132,6 @@ pub async fn build(ctx: Context<'_>,
     Ok(())
 }*/
 
-/*
 /// Build language model from plain messages files
 #[poise::command(prefix_command, slash_command)]
 pub async fn fromscratch(
@@ -218,10 +217,17 @@ pub async fn fromscratch(
         a.split('.').next().unwrap_or(&a).to_string()
     };
 
+    // Get the current time
+    let now = Local::now();
+
+    // Get the model id
+    let id = hash64_with_seed(name.as_bytes(), now.timestamp() as u64);
+
     // Build the model
     let mut model = Model::build(dataset, bigrams, trigrams)
         .with_header("name", name.clone())
-        .with_header("created_at", Local::now().to_string())
+        .with_header("model_id", id)
+        .with_header("created_at", now)
         .with_header("version", MARKOV_CHAINS_VERSION);
 
     // Add optional description
@@ -230,7 +236,10 @@ pub async fn fromscratch(
     }
 
     // Store the model
-    std::fs::write(format!("{}/{}.model", MODEL_DIR, name), postcard::to_allocvec(&model)?)?;
+    std::fs::write(format!("{}/{}", MODEL_DIR, id), postcard::to_allocvec(&model)?)?;
+
+    // Add to database
+    add_model(id.to_string(), name.clone()).unwrap();
 
     // Set the model as completed
     status.edit(ctx, poise::CreateReply {
@@ -239,7 +248,7 @@ pub async fn fromscratch(
     }).await?;
 
     Ok(())
-}*/
+}
 
 /// Load language model
 #[poise::command(prefix_command, slash_command)]
@@ -266,7 +275,7 @@ pub async fn load(
             };
             let name = model.headers().get("name").unwrap_or(&file.filename);
 
-            let id = hash64_with_seed(&content, now as u64);
+            let id = hash64_with_seed(name.as_bytes(), now as u64);
             std::fs::write(format!("{}/{}", MODEL_DIR, id), content)?;
 
             add_model(id.to_string(), name.clone()).unwrap();
@@ -282,7 +291,7 @@ pub async fn load(
             };
             let name = model.headers().get("name").unwrap_or(&name);
 
-            let id = hash64_with_seed(&content, now as u64);
+            let id = hash64_with_seed(name.as_bytes(), now as u64);
             std::fs::write(format!("{}/{}", MODEL_DIR, id), content)?;
 
             add_model(id.to_string(), name.clone()).unwrap();

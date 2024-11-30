@@ -7,7 +7,7 @@ pub const DB_NAME: &str = "markov_chains.db";
 pub const MODEL_DIR: &str = "models";
 
 pub const DEFAULT_MODEL_NAME: &str = "kleden4";
-pub const DEFAULT_MODEL_ID: &str = "282401711314083980";
+pub const DEFAULT_MODEL_ID: &str = "16291105416022699669";
 
 pub const MARKOV_CHAINS_VERSION: &str = "1.4.4";
 
