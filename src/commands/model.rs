@@ -1,13 +1,10 @@
-use std::borrow::Cow;
-
 use crate::{
     global::*,
     db::*,
     utils::pretty_bytes
 };
 
-use poise::{serenity_prelude as serenity, CreateReply};
-use serenity::{CreateActionRow, CreateButton, CreateEmbed};
+use poise::serenity_prelude as serenity;
 use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
 use bytes::Bytes;
@@ -53,12 +50,11 @@ pub async fn download(url: String) -> Result<(String, Bytes), Error> {
     }
 }
 
-#[poise::command(prefix_command, slash_command, subcommand_required, subcommands(/*"build", */"fromscratch", "load", "list", "info"))]
+#[poise::command(prefix_command, slash_command, subcommand_required, subcommands("build", "fromscratch", "load", "list", "info"))]
 pub async fn model(_: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-/*
 /// Build language model
 #[poise::command(prefix_command, slash_command)]
 pub async fn build(ctx: Context<'_>,
@@ -112,9 +108,17 @@ pub async fn build(ctx: Context<'_>,
         name.split('.').next().unwrap_or(&name).to_owned()
     };
 
-    // Create model from dataset
+    // Get the current time
+    let now = Local::now();
+
+    // Get the model id
+    let id = hash64_with_seed(name.as_bytes(), now.timestamp() as u64);
+
+    // Build the model
     let mut model = Model::build(dataset, bigrams, trigrams)
-        .with_header("name", model_name.clone())
+        .with_header("name", name.clone())
+        .with_header("model_id", id)
+        .with_header("created_at", now)
         .with_header("version", MARKOV_CHAINS_VERSION);
 
     // Add optional description
@@ -123,7 +127,10 @@ pub async fn build(ctx: Context<'_>,
     }
 
     // Write model to file
-    std::fs::write(format!("{}/{}.model", MODEL_DIR, model_name), postcard::to_allocvec(&model)?)?;
+    std::fs::write(format!("{}/{}", MODEL_DIR, id), postcard::to_allocvec(&model)?)?;
+
+    // Add to database
+    add_model(id.to_string(), name.clone(), now.to_string()).unwrap();
 
     // Update user
     status.edit(ctx, poise::CreateReply {
@@ -132,7 +139,7 @@ pub async fn build(ctx: Context<'_>,
     }).await?;
 
     Ok(())
-}*/
+}
 
 /// Build language model from plain messages files
 #[poise::command(prefix_command, slash_command)]
