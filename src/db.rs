@@ -14,6 +14,7 @@ pub fn create_db() -> Result<()> {
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 version TEXT NOT NULL,
+                created TEXT NOT NULL,
                 description TEXT
             )", ()
         )?;
@@ -44,8 +45,8 @@ pub fn create_db() -> Result<()> {
 
         // Insert default model
         conn.execute(
-            "INSERT INTO models (id, name, version) VALUES (?, ?, ?)",
-            (DEFAULT_MODEL_ID, DEFAULT_MODEL_NAME, MARKOV_CHAINS_VERSION.to_string())
+            "INSERT INTO models (id, name, version, created) VALUES (?, ?, ?, ?)",
+            (DEFAULT_MODEL_ID, DEFAULT_MODEL_NAME, MARKOV_CHAINS_VERSION.to_string(), "69420")
         )?;
     }
 
@@ -53,40 +54,27 @@ pub fn create_db() -> Result<()> {
 }
 
 
-pub fn add_model(id: String, name: String) -> Result<()> {
+pub fn add_model(id: String, name: String, timestamp: String) -> Result<()> {
     let conn = Connection::open(DB_NAME)?;
 
     conn.execute(
-        "INSERT INTO models (id, name, version) VALUES (?, ?, ?)",
-        (id, name, MARKOV_CHAINS_VERSION.to_string()),
+        "INSERT INTO models (id, name, version, created) VALUES (?, ?, ?, ?)",
+        (id, name, MARKOV_CHAINS_VERSION.to_string(), timestamp),
     )?;
 
     Ok(())
 }
 
-pub fn model_get_ids() -> Result<Vec<u8>> {
-    let conn = Connection::open(DB_NAME)?;
-
-    let mut stmt = conn.prepare("SELECT id FROM models")?;
-
-    let models = stmt
-        .query_map([], |row| row.get(0))?
-        .collect::<Result<Vec<u8>>>()?;
-
-    Ok(models)
-}
-
-pub fn model_get_id(name: String) -> Result<u64> {
+pub fn model_get_ids(name: String) -> Result<Vec<String>> {
     let conn = Connection::open(DB_NAME)?;
 
     let mut stmt = conn.prepare("SELECT id FROM models WHERE name = ?")?;
 
-    let id = stmt
+    let ids = stmt
         .query_map([name], |row| row.get(0))?
-        .next()
-        .unwrap()?;
+        .collect::<Result<Vec<String>>>()?;
 
-    Ok(id)
+    Ok(ids)
 }
 
 pub fn model_get_name(id: String) -> Result<String> {
@@ -102,28 +90,18 @@ pub fn model_get_name(id: String) -> Result<String> {
     Ok(name)
 }
 
-/*
-pub fn server_add_model(server: u64, model: u64) -> Result<()> {
+pub fn model_get_timestamp(id: String) -> Result<String> {
     let conn = Connection::open(DB_NAME)?;
 
-    conn.execute(
-        "INSERT INTO server_models (server_id, model_id) VALUES (?, ?)",
-        [server, model],
-    )?;
+    let mut stmt = conn.prepare("SELECT created FROM models WHERE id = ?")?;
 
-    Ok(())
+    let timestamp = stmt
+        .query_map([id], |row| row.get(0))?
+        .next()
+        .unwrap()?;
+
+    Ok(timestamp)
 }
-
-pub fn server_get_models(server: u64) -> Result<Vec<u64>> {
-    let conn = Connection::open(DB_NAME)?;
-
-    let mut stmt = conn.prepare("SELECT model_id FROM server_models WHERE server_id = ?")?;
-    let models = stmt
-        .query_map([server], |row| row.get(0))?
-        .collect::<Result<Vec<u64>, _>>()?;
-
-    Ok(models)
-} */
 
 pub fn add_user(id: String) -> Result<()> {
     let conn = Connection::open(DB_NAME)?;
@@ -214,27 +192,3 @@ pub fn user_set_params(user: String, params: GenerationParams) -> Result<()> {
 
     Ok(())
 }
-
-// Get the model headers and size for each model
-/*
-pub fn get_models_info(models: Vec<u64>) -> Result<(Vec<Vec<String>>)> {
-    let conn = Connection::open(DB_NAME)?;
-
-    let mut stmt = conn.prepare("SELECT name, version, description FROM models WHERE id = ?")?;
-    let mut info = Vec::new();
-
-    for model in models {
-        if let Ok(metadata) =
-
-        info.push(stmt.query_map([model], |row| {
-            Ok(vec![
-                row.get(0)?,
-                row.get(1)?,
-                row.get(2)?,
-            ])
-        })?.next().unwrap()?);
-    }
-
-    Ok(info)
-}
-*/

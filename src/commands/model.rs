@@ -1,16 +1,18 @@
+use std::borrow::Cow;
+
 use crate::{
     global::*,
     db::*,
     utils::pretty_bytes
 };
 
-use poise::serenity_prelude as serenity;
+use poise::{serenity_prelude as serenity, CreateReply};
+use serenity::{CreateActionRow, CreateButton, CreateEmbed};
 use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
 use bytes::Bytes;
 use std::fs::read_dir;
 use xxh3::hash64_with_seed;
-
 use markov_chains::{
     prelude::*,
     dataset::Dataset,
@@ -239,7 +241,7 @@ pub async fn fromscratch(
     std::fs::write(format!("{}/{}", MODEL_DIR, id), postcard::to_allocvec(&model)?)?;
 
     // Add to database
-    add_model(id.to_string(), name.clone()).unwrap();
+    add_model(id.to_string(), name.clone(), now.to_string()).unwrap();
 
     // Set the model as completed
     status.edit(ctx, poise::CreateReply {
@@ -261,10 +263,24 @@ pub async fn load(
     let status = ctx.say("Attempting to load model").await?;
 
     let (id, name) = {
-        let now = Local::now().timestamp();
+        let now = Local::now();
 
         if let Some(name) = name {
-            (model_get_id(name.clone())?, name)
+            let Ok(model_ids) = model_get_ids(name.clone()) else {
+                return Err("**ERROR: Failed to get results**".into());
+            };
+
+            if model_ids.is_empty() {
+                return Err("**ERROR: No model found**".into());
+            }
+
+            if model_ids.len() > 1 {
+                return Err("**ERROR: Multiple models found**".into());
+            }
+
+            let id = model_ids[0].parse::<u64>().unwrap();
+
+            (id, name)
         } else if let Some(file) = file {
             let Ok(content) = file.download().await else {
                 return Err("**ERROR: Failed to download attachment**".into());
@@ -275,10 +291,10 @@ pub async fn load(
             };
             let name = model.headers().get("name").unwrap_or(&file.filename);
 
-            let id = hash64_with_seed(name.as_bytes(), now as u64);
+            let id = hash64_with_seed(name.as_bytes(), now.timestamp() as u64);
             std::fs::write(format!("{}/{}", MODEL_DIR, id), content)?;
 
-            add_model(id.to_string(), name.clone()).unwrap();
+            add_model(id.to_string(), name.clone(), now.to_string()).unwrap();
 
             (id, name.to_string())
         } else if let Some(url) = url {
@@ -291,10 +307,10 @@ pub async fn load(
             };
             let name = model.headers().get("name").unwrap_or(&name);
 
-            let id = hash64_with_seed(name.as_bytes(), now as u64);
+            let id = hash64_with_seed(name.as_bytes(), now.timestamp() as u64);
             std::fs::write(format!("{}/{}", MODEL_DIR, id), content)?;
 
-            add_model(id.to_string(), name.clone()).unwrap();
+            add_model(id.to_string(), name.clone(), now.to_string()).unwrap();
 
             (id, name.to_string())
         } else {
