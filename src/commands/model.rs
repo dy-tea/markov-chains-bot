@@ -9,6 +9,7 @@ use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
 use bytes::Bytes;
 use std::fs::read_dir;
+use xxh3::hash64_with_seed;
 
 use markov_chains::{
     prelude::*,
@@ -251,6 +252,8 @@ pub async fn load(
     let status = ctx.say("Attempting to load model").await?;
 
     let (id, name) = {
+        let now = Local::now().timestamp();
+
         if let Some(name) = name {
             (model_get_id(name.clone())?, name)
         } else if let Some(file) = file {
@@ -258,13 +261,15 @@ pub async fn load(
                 return Err("**ERROR: Failed to download attachment**".into());
             };
 
-            let model = postcard::from_bytes::<Model>(&content)?;
+            let Ok(model) = postcard::from_bytes::<Model>(&content) else {
+                return Err("**ERROR: Invalid model file** ".into());
+            };
             let name = model.headers().get("name").unwrap_or(&file.filename);
 
-            let id = model_get_id(name.clone())?;
+            let id = hash64_with_seed(&content, now as u64);
             std::fs::write(format!("{}/{}", MODEL_DIR, id), content)?;
 
-            add_model(id, name.clone()).unwrap();
+            add_model(id.to_string(), name.clone()).unwrap();
 
             (id, name.to_string())
         } else if let Some(url) = url {
@@ -272,13 +277,15 @@ pub async fn load(
                 return Err("**ERROR: Failed to download url**".into());
             };
 
-            let model = postcard::from_bytes::<Model>(&content)?;
+            let Ok(model) = postcard::from_bytes::<Model>(&content) else {
+                return Err("**ERROR: Invalid model file**".into());
+            };
             let name = model.headers().get("name").unwrap_or(&name);
 
-            let id = model_get_id(name.to_string())?;
-            std::fs::write(format!("{}/{}.model", MODEL_DIR, id), content)?;
+            let id = hash64_with_seed(&content, now as u64);
+            std::fs::write(format!("{}/{}", MODEL_DIR, id), content)?;
 
-            add_model(id, name.clone()).unwrap();
+            add_model(id.to_string(), name.clone()).unwrap();
 
             (id, name.to_string())
         } else {
@@ -286,11 +293,17 @@ pub async fn load(
         }
     };
 
+    // Get user id
+    let user_id = ctx.author().id.to_string();
+
+    // Create the user
+    add_user(user_id.clone()).unwrap();
+
     // Set the model as loaded
-    user_set_loaded(ctx.author().id.get(), id).unwrap();
+    user_set_loaded(user_id, id.to_string()).unwrap();
 
     status.edit(ctx, poise::CreateReply {
-        content: Some(format!("Model `{}` loaded successfully", name)),
+        content: Some(format!("Updated user model to `{}`", name)),
         ..Default::default()
     }).await?;
 
@@ -351,7 +364,9 @@ pub async fn list(
 pub async fn info(
     ctx: Context<'_>,
 ) -> Result<(), Error> {
-    let loaded = user_get_loaded(ctx.author().id.get()).unwrap();
+    let Ok(loaded) = user_get_loaded(ctx.author().id.to_string()) else {
+        return Err("**ERROR: No model loaded**".into());
+    };
 
     let model = postcard::from_bytes::<Model>(&std::fs::read(format!("{}/{}", MODEL_DIR, loaded))?)?;
 

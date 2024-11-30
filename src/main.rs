@@ -1,3 +1,7 @@
+use std::collections::VecDeque;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 use poise::serenity_prelude as serenity;
 
 pub mod global;
@@ -28,7 +32,9 @@ async fn main() {
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {})
+                Ok(Data {
+                    queue: Arc::new(Mutex::new(VecDeque::new()))
+                })
             })
         })
         .build();

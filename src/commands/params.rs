@@ -47,11 +47,11 @@ pub async fn set(
     #[description = "Do not use bigrams for text generation"] no_bigrams: Option<bool>,
     #[description = "Do not use trigrams for text generation"] no_trigrams: Option<bool>,
 ) -> Result<(), Error> {
-    let author_id = ctx.author().id.get();
+    let author_id = ctx.author().id.to_string();
 
-    let params = user_get_params(author_id).unwrap();
+    let params = user_get_params(author_id.clone()).unwrap();
 
-    user_set_params(author_id, GenerationParams {
+    user_set_params(author_id.clone(), GenerationParams {
         temperature: temperature.unwrap_or(params.temperature),
         temperature_alpha: temperature_alpha.unwrap_or(params.temperature_alpha),
         repeat_penalty: repeat_penalty.unwrap_or(params.repeat_penalty),
@@ -61,10 +61,11 @@ pub async fn set(
         max_len: max_len.unwrap_or(params.max_len),
         no_bigrams: no_bigrams.unwrap_or(params.no_bigrams),
         no_trigrams: no_trigrams.unwrap_or(params.no_trigrams),
-    });
+    }).unwrap();
 
-    let formatted_params = format_params(&params);
-    ctx.say(format!("## Params have been updated\n{}", formatted_params)).await?;
+    let new_params = user_get_params(author_id).unwrap();
+
+    ctx.say(format!("## Params have been updated\n{}", format_params(&new_params))).await?;
 
     Ok(())
 }
@@ -72,7 +73,7 @@ pub async fn set(
 /// Show current model parameters
 #[poise::command(prefix_command, slash_command)]
 pub async fn show(ctx: Context<'_>) -> Result<(), Error>  {
-    let params = user_get_params(ctx.author().id.get()).unwrap();
+    let params = user_get_params(ctx.author().id.to_string()).unwrap();
 
     ctx.say(format_params(&params)).await?;
 
@@ -82,7 +83,7 @@ pub async fn show(ctx: Context<'_>) -> Result<(), Error>  {
 /// Reset model parameters to default values
 #[poise::command(prefix_command, slash_command)]
 pub async fn reset(ctx: Context<'_>) -> Result<(), Error>  {
-    user_set_params(ctx.author().id.get(), GenerationParams::default());
+    user_set_params(ctx.author().id.to_string(), GenerationParams::default()).unwrap();
 
     ctx.say("**Params have been reset**").await?;
 
