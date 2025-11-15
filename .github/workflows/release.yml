@@ -3,7 +3,7 @@ name: Create Release
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 jobs:
   build:
@@ -20,8 +20,11 @@ jobs:
           override: true
           components: rustfmt, clippy
 
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+
       - name: Install cross dependencies
-        run: sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross docker
+        run: sudo apt-get install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross
 
       - name: Start docker
         run: sudo systemctl start docker
@@ -40,9 +43,9 @@ jobs:
 
       - name: Rename files
         run: |
-            ls target
-            cp target/aarch64-unknown-linux-gnu/release/markov-chains-bot markov-chains-bot-aarch64
-            cp target/release/markov-chains-bot markov-chains-bot-x86_84
+          ls target
+          cp target/aarch64-unknown-linux-gnu/release/markov-chains-bot markov-chains-bot-aarch64
+          cp target/release/markov-chains-bot markov-chains-bot-x86_84
 
       - name: Create Release
         id: create_release

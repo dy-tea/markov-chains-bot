@@ -10,6 +10,7 @@ use markov_chains::prelude::*;
 pub async fn query(
     ctx: Context<'_>,
     #[description = "Starting query to run the current model off"] query: String,
+    #[description = "Say as Cow"] cowsay: Option<bool>,
 ) -> Result<(), Error> {
     let generated = ctx.say("Generating...").await?;
 
@@ -105,7 +106,81 @@ pub async fn query(
             }
         }
     }
+    
+    // format the message as cowsay
+    if let Some(cowsay) = cowsay {
+        if cowsay {
+            // Remove any code tags inside message
+            let cleaned_message = message.replace("```", "");
 
+            let cow = r#"     \   ^__^
+      \  (oo)\_______
+         (__)\       )\/\
+             ||----w |
+             ||     ||"#;
+
+            // Wrap the message at 40 characters
+            let mut wrapped_message = String::new();
+            let mut current_line = String::new();
+            for word in cleaned_message.split_whitespace() {
+                if current_line.len() + word.len() + 1 > 40 {
+                    if !wrapped_message.is_empty() {
+                        wrapped_message.push('\n');
+                    }
+                    wrapped_message.push_str(&current_line);
+                    current_line = word.to_string();
+                } else {
+                    if !current_line.is_empty() {
+                        current_line.push(' ');
+                    }
+                    current_line.push_str(word);
+                }
+            }
+            if !current_line.is_empty() {
+                if !wrapped_message.is_empty() {
+                    wrapped_message.push('\n');
+                }
+                wrapped_message.push_str(&current_line);
+            }
+
+            let max_line_length = wrapped_message.lines().map(|line| line.len()).max().unwrap_or(0);
+
+            let mut bubble = String::new();
+            if wrapped_message.lines().count() == 1 {
+                // Single line message
+                bubble.push_str(&format!(" {}\n", "-".repeat(max_line_length + 2)));
+                bubble.push_str(&format!("| {} |\n", wrapped_message));
+                bubble.push_str(&format!(" {}\n", "-".repeat(max_line_length + 2)));
+            } else {
+                // Multiple lines message
+                bubble.push_str(&format!(" {}\n", "_".repeat(max_line_length + 2)));
+
+                let line_count = wrapped_message.lines().count();
+                for (i, line) in wrapped_message.lines().enumerate() {
+                    if i == 0 {
+                        bubble.push_str(&format!("/ {:<1$} \\\n", line, max_line_length));
+                    } else if i == line_count - 1 {
+                        bubble.push_str(&format!("\\ {:<1$} /\n", line, max_line_length));
+                    } else {
+                        bubble.push_str(&format!("| {:<1$} |\n", line, max_line_length));
+                    }
+                }
+
+                bubble.push_str(&format!(" {}\n", "-".repeat(max_line_length + 2)));
+            }
+            bubble.push_str(cow);
+
+            // Format as cowsay and enclose in markdown code tags
+            let cowsay_message = format!("```\n{}\n```", bubble);
+
+            generated.edit(ctx, poise::CreateReply{
+                content: Some(cowsay_message),
+                ..Default::default()
+            }).await?;
+            return Ok(());
+        }
+    }
+    
     // Display the generated message
     generated.edit(ctx, poise::CreateReply {
         content: Some(message.clone()),
