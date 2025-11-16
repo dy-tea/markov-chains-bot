@@ -1,6 +1,6 @@
 [package]
 name = "markov-chains-bot"
-version = "1.9.0"
+version = "1.9.1"
 description = "Markov chains discord bot"
 authors = ["Dylan Donnell <dylan.donnell@student.griffith.ie>"]
 repository = "https://github.com/dy-tea/markov-chains-bot"
@@ -48,3 +48,4 @@ chrono = "0.4"
 bytes = "1.0"
 sysinfo = "0.32.1"
 xxh3 = "0.1.1"
+unicode-width = "0.2.2"

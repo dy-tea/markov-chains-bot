@@ -4,11 +4,10 @@ use crate::{
     utils::pretty_bytes
 };
 
-use poise::{serenity_prelude as serenity, ReplyHandle};
+use poise::serenity_prelude as serenity;
 use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
 use bytes::Bytes;
-use rusqlite::ToSql;
 use std::fs::read_dir;
 use xxh3::hash64_with_seed;
 use markov_chains::{

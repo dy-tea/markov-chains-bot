@@ -4,6 +4,7 @@ use crate::{
 };
 
 use markov_chains::prelude::*;
+use unicode_width;
 
 /// Send a query to the currently loaded model
 #[poise::command(prefix_command, slash_command, broadcast_typing)]
@@ -11,6 +12,7 @@ pub async fn query(
     ctx: Context<'_>,
     #[description = "Starting query to run the current model off"] query: String,
     #[description = "Say as Cow"] cowsay: Option<bool>,
+    #[description = "Wrap at column count"] wrap_at: Option<usize>,
 ) -> Result<(), Error> {
     let generated = ctx.say("Generating...").await?;
 
@@ -119,11 +121,25 @@ pub async fn query(
              ||----w |
              ||     ||"#;
 
-            // Wrap the message at 40 characters
+            // Helper function to calculate display width
+            fn display_width(s: &str) -> usize {
+                s.chars().map(|c| {
+                    if c.len_utf8() > 1 {
+                        unicode_width::UnicodeWidthChar::width(c).unwrap_or(1)
+                    } else {
+                        1
+                    }
+                }).sum()
+            }
+            
+            // Wrap message at specified width or default to 40 characters
+            let wrap_at = wrap_at.unwrap_or(40);
             let mut wrapped_message = String::new();
             let mut current_line = String::new();
             for word in cleaned_message.split_whitespace() {
-                if current_line.len() + word.len() + 1 > 40 {
+                let word_width = display_width(word);
+                let current_width = display_width(&current_line);
+                if current_width + word_width + 1 > wrap_at {
                     if !wrapped_message.is_empty() {
                         wrapped_message.push('\n');
                     }
@@ -143,13 +159,15 @@ pub async fn query(
                 wrapped_message.push_str(&current_line);
             }
 
-            let max_line_length = wrapped_message.lines().map(|line| line.len()).max().unwrap_or(0);
+            let max_line_length = wrapped_message.lines().map(|line| display_width(line)).max().unwrap_or(0);
 
             let mut bubble = String::new();
             if wrapped_message.lines().count() == 1 {
                 // Single line message
                 bubble.push_str(&format!(" {}\n", "-".repeat(max_line_length + 2)));
-                bubble.push_str(&format!("| {} |\n", wrapped_message));
+                let line = wrapped_message.lines().next().unwrap();
+                let padding = max_line_length - display_width(line);
+                bubble.push_str(&format!("| {}{} |\n", line, " ".repeat(padding)));
                 bubble.push_str(&format!(" {}\n", "-".repeat(max_line_length + 2)));
             } else {
                 // Multiple lines message
@@ -157,12 +175,13 @@ pub async fn query(
 
                 let line_count = wrapped_message.lines().count();
                 for (i, line) in wrapped_message.lines().enumerate() {
+                    let padding = max_line_length - display_width(line);
                     if i == 0 {
-                        bubble.push_str(&format!("/ {:<1$} \\\n", line, max_line_length));
+                        bubble.push_str(&format!("/ {}{} \\\n", line, " ".repeat(padding)));
                     } else if i == line_count - 1 {
-                        bubble.push_str(&format!("\\ {:<1$} /\n", line, max_line_length));
+                        bubble.push_str(&format!("\\ {}{} /\n", line, " ".repeat(padding)));
                     } else {
-                        bubble.push_str(&format!("| {:<1$} |\n", line, max_line_length));
+                        bubble.push_str(&format!("| {}{} |\n", line, " ".repeat(padding)));
                     }
                 }
 
