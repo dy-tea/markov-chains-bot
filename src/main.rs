@@ -1,6 +1,7 @@
 use std::collections::VecDeque;
+use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
 
 use poise::serenity_prelude as serenity;
 
@@ -33,7 +34,8 @@ async fn main() {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
-                    queue: Arc::new(Mutex::new(VecDeque::new()))
+                    queue: Arc::new(Mutex::new(VecDeque::new())),
+                    models: Arc::new(RwLock::new(HashMap::new())),
                 })
             })
         })

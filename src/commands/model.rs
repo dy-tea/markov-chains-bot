@@ -9,6 +9,7 @@ use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
 use bytes::Bytes;
 use std::fs::read_dir;
+use std::sync::Arc;
 use xxh3::hash64_with_seed;
 use markov_chains::{
     prelude::*,
@@ -434,7 +435,27 @@ pub async fn info(
 
     let loaded = user_get_loaded(ctx.author().id.to_string()).unwrap_or(DEFAULT_MODEL_ID.to_string());
 
-    let model = postcard::from_bytes::<Model>(&std::fs::read(format!("{}/{}", MODEL_DIR, loaded))?)?;
+    // Get model from cache or load it
+    let model = {
+        let models = ctx.data().models.read().await;
+        match models.get(&loaded) {
+            Some(model) => model.clone(),
+            None => {
+                drop(models);
+                let mut models = ctx.data().models.write().await;
+                match models.get(&loaded) {
+                    Some(model) => model.clone(),
+                    None => {
+                        let model_path = format!("{}/{}", MODEL_DIR, loaded);
+                        let bytes = std::fs::read(model_path)?;
+                        let model = Arc::new(postcard::from_bytes::<Model>(&bytes)?);
+                        models.insert(loaded.clone(), model.clone());
+                        model
+                    }
+                }
+            }
+        }
+    };
 
     let formatted_headers = model.headers().iter()
         .map(|(key, value)| format!("- **{}:**\t`{}`", key, value))

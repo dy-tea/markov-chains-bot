@@ -4,6 +4,7 @@ use crate::{
 };
 
 use markov_chains::prelude::*;
+use std::sync::Arc;
 use unicode_width;
 
 /// Send a query to the currently loaded model
@@ -22,18 +23,27 @@ pub async fn query(
     // Get loaded model id
     let loaded_model = user_get_loaded(user_id.parse().unwrap()).unwrap_or(DEFAULT_MODEL_ID.to_string());
 
-    // Get the path to the model
-    let model_path = format!("{}/{}", MODEL_DIR, loaded_model);
-
-    // Load the model
-    let model = match std::fs::read(model_path) {
-        Ok(model) => {
-            match postcard::from_bytes::<Model>(&model) {
-                Ok(model) => model,
-                Err(e) => return Err(format!("**ERROR:** `{}`", e).into())
+    // Get model from cache or load it
+    let model = {
+        // First try read lock
+        let models = ctx.data().models.read().await;
+        match models.get(&loaded_model) {
+            Some(model) => model.clone(),
+            None => {
+                drop(models);
+                let mut models = ctx.data().models.write().await;
+                match models.get(&loaded_model) {
+                    Some(model) => model.clone(),
+                    None => {
+                        let model_path = format!("{}/{}", MODEL_DIR, loaded_model);
+                        let bytes = std::fs::read(model_path)?;
+                        let model = Arc::new(postcard::from_bytes::<Model>(&bytes)?);
+                        models.insert(loaded_model.clone(), model.clone());
+                        model
+                    }
+                }
             }
         }
-        Err(e) => return Err(format!("**ERROR:** `{}`", e).into())
     };
 
     // Get user params
