@@ -1,7 +1,4 @@
-use crate::{
-    global::*,
-    db::*
-};
+use crate::{db::*, global::*};
 
 use markov_chains::prelude::*;
 use std::sync::Arc;
@@ -23,22 +20,20 @@ pub async fn query(
     // Get loaded model id
     let loaded_model = user_get_loaded(user_id.parse().unwrap()).unwrap_or(DEFAULT_MODEL_ID.to_string());
 
-    // Get model from cache or load it
     let model = {
-        // First try read lock
         let models = ctx.data().models.read().await;
         match models.get(&loaded_model) {
-            Some(model) => model.clone(),
+            Some(model) => (**model).clone(),
             None => {
                 drop(models);
                 let mut models = ctx.data().models.write().await;
                 match models.get(&loaded_model) {
-                    Some(model) => model.clone(),
+                    Some(model) => (**model).clone(),
                     None => {
                         let model_path = format!("{}/{}", MODEL_DIR, loaded_model);
                         let bytes = std::fs::read(model_path)?;
-                        let model = Arc::new(postcard::from_bytes::<Model>(&bytes)?);
-                        models.insert(loaded_model.clone(), model.clone());
+                        let model: Model = postcard::from_bytes(&bytes)?;
+                        models.insert(loaded_model.clone(), Arc::new(model.clone()));
                         model
                     }
                 }
@@ -107,7 +102,7 @@ pub async fn query(
                         None => {
                             // Bot isn't being run from a server, return the emoji as is
                             message.push_str(word);
-                        },
+                        }
                     }
                 } else {
                     message.push_str(word);
@@ -118,7 +113,7 @@ pub async fn query(
             }
         }
     }
-    
+
     // format the message as cowsay
     if let Some(cowsay) = cowsay {
         if cowsay {
@@ -133,15 +128,17 @@ pub async fn query(
 
             // Helper function to calculate display width
             fn display_width(s: &str) -> usize {
-                s.chars().map(|c| {
-                    if c.len_utf8() > 1 {
-                        unicode_width::UnicodeWidthChar::width(c).unwrap_or(1)
-                    } else {
-                        1
-                    }
-                }).sum()
+                s.chars()
+                    .map(|c| {
+                        if c.len_utf8() > 1 {
+                            unicode_width::UnicodeWidthChar::width(c).unwrap_or(1)
+                        } else {
+                            1
+                        }
+                    })
+                    .sum()
             }
-            
+
             // Wrap message at specified width or default to 40 characters
             let wrap_at = wrap_at.unwrap_or(40);
             let mut wrapped_message = String::new();
@@ -169,7 +166,11 @@ pub async fn query(
                 wrapped_message.push_str(&current_line);
             }
 
-            let max_line_length = wrapped_message.lines().map(|line| display_width(line)).max().unwrap_or(0);
+            let max_line_length = wrapped_message
+                .lines()
+                .map(|line| display_width(line))
+                .max()
+                .unwrap_or(0);
 
             let mut bubble = String::new();
             if wrapped_message.lines().count() == 1 {
