@@ -4,6 +4,8 @@ use crate::{
     utils::pretty_bytes
 };
 
+use std::sync::Arc;
+
 use poise::serenity_prelude as serenity;
 use reqwest::header::CONTENT_DISPOSITION;
 use chrono::Local;
@@ -434,7 +436,18 @@ pub async fn info(
 
     let loaded = user_get_loaded(ctx.author().id.to_string()).unwrap_or(DEFAULT_MODEL_ID.to_string());
 
-    let model = postcard::from_bytes::<Model>(&std::fs::read(format!("{}/{}", MODEL_DIR, loaded))?)?;
+    let model = {
+        let cache = ctx.data().model_cache.read().await;
+        if let Some(cached) = cache.get(&loaded) {
+            Arc::clone(cached)
+        } else {
+            drop(cache);
+            let bytes = std::fs::read(format!("{}/{}", MODEL_DIR, loaded))?;
+            let m = Arc::new(postcard::from_bytes::<Model>(&bytes)?);
+            ctx.data().model_cache.write().await.insert(loaded.clone(), Arc::clone(&m));
+            m
+        }
+    };
 
     let formatted_headers = model.headers().iter()
         .map(|(key, value)| format!("- **{}:**\t`{}`", key, value))

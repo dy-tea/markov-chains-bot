@@ -1,6 +1,7 @@
-use std::collections::VecDeque;
+use std::collections::{VecDeque, HashMap};
 use std::sync::Arc;
-use tokio::sync::Mutex;
+use tokio::sync::{Mutex, RwLock};
+use markov_chains::prelude::Model;
 
 pub const DB_NAME: &str = "markov_chains.db";
 
@@ -13,6 +14,7 @@ pub const MARKOV_CHAINS_VERSION: &str = "1.4.4";
 
 pub struct Data {
     pub queue: Arc<Mutex<VecDeque<(u64, u64)>>>,
+    pub model_cache: Arc<RwLock<HashMap<String, Arc<Model>>>>,
 }
 
 pub type Error = Box<dyn std::error::Error + Send + Sync>;

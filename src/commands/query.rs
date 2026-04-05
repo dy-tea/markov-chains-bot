@@ -3,6 +3,8 @@ use crate::{
     db::*
 };
 
+use std::sync::Arc;
+
 use markov_chains::prelude::*;
 use unicode_width;
 
@@ -25,15 +27,24 @@ pub async fn query(
     // Get the path to the model
     let model_path = format!("{}/{}", MODEL_DIR, loaded_model);
 
-    // Load the model
-    let model = match std::fs::read(model_path) {
-        Ok(model) => {
-            match postcard::from_bytes::<Model>(&model) {
-                Ok(model) => model,
-                Err(e) => return Err(format!("**ERROR:** `{}`", e).into())
-            }
+    // Load the model (check cache first)
+    let model = {
+        let cache = ctx.data().model_cache.read().await;
+        if let Some(cached) = cache.get(&loaded_model) {
+            Arc::clone(cached)
+        } else {
+            drop(cache);
+            let bytes = match std::fs::read(&model_path) {
+                Ok(b) => b,
+                Err(e) => return Err(format!("**ERROR:** `{}`", e).into()),
+            };
+            let m = match postcard::from_bytes::<Model>(&bytes) {
+                Ok(m) => Arc::new(m),
+                Err(e) => return Err(format!("**ERROR:** `{}`", e).into()),
+            };
+            ctx.data().model_cache.write().await.insert(loaded_model.clone(), Arc::clone(&m));
+            m
         }
-        Err(e) => return Err(format!("**ERROR:** `{}`", e).into())
     };
 
     // Get user params
